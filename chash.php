@@ -5,6 +5,9 @@ define('CHASH_LOOKUPS',  1000000);
 define('CHASH_ITEM',     'item-54321');
 define('CHASH_BALANCE',  5);
 
+// Load extension
+dl('chash.so');
+
 // Ring initialization
 $nodes = array();
 for ($index = 1; $index <= CHASH_NODES; $index ++)
