@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+set -e
+
+#DEBHELPER#
+
+if [ "$1" != "configure" ]; then
+    exit 0
+fi
+
+ldconfig
+
+exit 0
