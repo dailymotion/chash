@@ -7,6 +7,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include "libchash.h"
@@ -14,6 +15,9 @@
 // Private defines
 #define CHASH_MAGIC     (0x48414843)
 #define CHASH_REPLICAS  (128)
+
+// Static variables
+static u_char chash_rand_initialized = 0;
 
 // MurmurHash2 light implementation
 static u_int32_t chash_mmhash2(const void *key, int key_size)
@@ -107,7 +111,7 @@ int chash_terminate(CHASH_CONTEXT *context, u_char force)
 // Add target to context
 int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
 {
-    u_int16_t index;
+    u_int16_t index = 0;
 
     if (! context || ! target)
     {
@@ -123,12 +127,15 @@ int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
     }
     weight = weight < 1 ? 1 : weight;
     weight = weight > 10 ? 10 : weight;
-    for (index = 0; index < context->targets_count; index ++)
+    if (context->targets)
     {
-        if (! strcmp(target, context->targets[index].name))
+        for (index = 0; index < context->targets_count; index ++)
         {
-            context->targets[index].weight = weight;
-            break;
+            if (! strcmp(target, context->targets[index].name))
+            {
+                context->targets[index].weight = weight;
+                break;
+            }
         }
     }
     if (index == context->targets_count)
@@ -166,17 +173,50 @@ int chash_remove_target(CHASH_CONTEXT *context, const char *target)
     {
         return CHASH_ERROR_FROZEN;
     }
-    for (index = 0; index < context->targets_count; index ++)
+    if (context->targets)
     {
-        if (! strcmp(target, context->targets[index].name))
+        for (index = 0; index < context->targets_count; index ++)
         {
-            memmove(&(context->targets[index]), &(context->targets[index + 1]),
-                    sizeof(CHASH_TARGET) * (context->targets_count - index - 1));
-            context->targets_count --;
-            return CHASH_ERROR_DONE;
+            if (! strcmp(target, context->targets[index].name))
+            {
+                memmove(&(context->targets[index]), &(context->targets[index + 1]),
+                        sizeof(CHASH_TARGET) * (context->targets_count - index - 1));
+                context->targets_count --;
+                return CHASH_ERROR_DONE;
+            }
         }
     }
     return CHASH_ERROR_NOT_FOUND;
+}
+
+// Clear all targets from context
+int chash_clear_targets(CHASH_CONTEXT *context)
+{
+    u_int16_t index;
+
+    if (! context)
+    {
+        return CHASH_ERROR_INVALID_PARAMETER;
+    }
+    if (context->magic != CHASH_MAGIC)
+    {
+        return CHASH_ERROR_NOT_INITIALIZED;
+    }
+    if (context->frozen)
+    {
+        return CHASH_ERROR_FROZEN;
+    }
+    if (context->targets)
+    {
+        for (index = 0; index < context->targets_count; index ++)
+        {
+            free(context->targets[index].name);
+        }
+        free(context->targets);
+        context->targets       = NULL;
+        context->targets_count = 0;
+    }
+    return CHASH_ERROR_DONE;
 }
 
 // Return targets count within context
@@ -405,7 +445,7 @@ int chash_file_unserialize(CHASH_CONTEXT *context, const char *path)
     return status;
 }
 
-// Perform a search (implicit freeze)
+// Perform a lookup (implicit freeze)
 static int chash_sort16(const void *element1, const void *element2)
 {
     return (*(u_int16_t *)element1 > *(u_int16_t *)element2) ? 1 : -1;
@@ -466,6 +506,30 @@ int chash_lookup(CHASH_CONTEXT *context, const char *candidate, u_int16_t count,
     {
         context->lookup[index - (context->targets_count - count)] = context->targets[context->lookups[index].target].name;
     }
-    *output = context->lookup;
+    if (output)
+    {
+        *output = context->lookup;
+    }
     return count;
+}
+
+// Perform a lookup and randomly balance among results
+int chash_lookup_balance(CHASH_CONTEXT *context, const char *candidate, u_int16_t count, char **output)
+{
+    int status;
+
+    if ((status = chash_lookup(context, candidate, count, NULL)) < 0)
+    {
+        return status;
+    }
+    if (! chash_rand_initialized)
+    {
+        srand(getpid() + time(NULL));
+        chash_rand_initialized = 1;
+    }
+    if (output)
+    {
+        *output = context->lookup[rand() % status];
+    }
+    return CHASH_ERROR_DONE;
 }
