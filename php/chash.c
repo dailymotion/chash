@@ -1,211 +1,224 @@
-// Consistent hashing PHP class extension
-// DM/PYKE - 05/2009
+// Consistent hashing library PHP extension
+// pyke@dailymotion.com - 05/2009
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 #include "php.h"
+#include "libchash.h"
 
-#define CHASH_REPLICAS  (64)
-
-// CHash composite object definition, including module private storage data
+// CHash composite object definition
 typedef struct
 {
-    zend_object zo;
-    u_int32_t   targets_count;
-    char        **targets;
-    u_int32_t   entries_count;
-    u_int32_t   *entries;
-    u_int32_t   *selected;
+    zend_object   zo;
+    CHASH_CONTEXT context;
 } chash_object;
 
 // CHash class entry
 zend_class_entry *chash_class_entry;
 
-// MurmurHash2 light implementation
-static u_int32_t mmhash2(const void *key, int key_size)
+// CHash method addTarget(<target>[, <weight>]) -> long
+PHP_METHOD(CHash, addTarget)
 {
-    const u_int32_t magic  = 0x5bd1e995;
-    const int       rotate = 24;
-    const u_char    *data  = (const u_char *)key;
-    u_int32_t       hash   = 0x4d4d4832 ^ key_size;
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    u_int32_t    weight = 1, length;
+    char         *target;
 
-    if (key_size < 0)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &target, &length, &weight) != SUCCESS || length == 0)
     {
-        key_size = strlen(data);
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
     }
-    while (key_size >= 4)
-    {
-        u_int32_t k = *(u_int32_t *)data;
-
-        k        *= magic;
-        k        ^= k >> rotate;
-        k        *= magic;
-        hash     *= magic;
-        hash     ^= k;
-        data     += 4;
-        key_size -= 4;
-    }
-    switch (key_size)
-    {
-        case 3: hash ^= data[2] << 16;
-        case 2: hash ^= data[1] << 8;
-        case 1: hash ^= data[0];
-                hash *= magic;
-    }
-    hash ^= hash >> 13;
-    hash *= magic;
-    hash ^= hash >> 15;
-    return hash;
+    RETURN_LONG(chash_add_target(&(instance->context), target, weight))
 }
 
-// Integer-key array sort
-static int chash_sort(const void *element1, const void *element2)
+// CHash method removeTarget(<target>) -> long
+PHP_METHOD(CHash, removeTarget)
 {
-    return (*(u_int32_t *)element1 > *(u_int32_t *)element2) ? 1 : -1;
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    u_int32_t    length;
+    char         *target;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &target, &length) != SUCCESS || length == 0)
+    {
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+    }
+    RETURN_LONG(chash_remove_target(&(instance->context), target))
 }
 
-// CHash method setTargets(array('name1' => weight1 [, ...])) -> long
+// CHash method setTargets(array(<target> => <weight> [, ...])) -> long
 PHP_METHOD(CHash, setTargets)
 {
     HashPosition position;
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    zval         *targets, **value;
-    uint         length, index, entries_index = 0, targets_index = 0;
-    long         unused, weight;
-    char         *target, name[128];
+    zval         *targets, **weight;
+    uint         length;
+    ulong        unused;
+    int          status;
+    char         *target;
 
-    if (instance->targets_count)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &targets) != SUCCESS)
     {
-        RETURN_LONG(instance->entries_count)
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER)
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &targets) == SUCCESS)
+    if ((status = chash_clear_targets(&(instance->context))) < 0)
     {
-        for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(targets), &position);
-             zend_hash_get_current_key_ex(Z_ARRVAL_P(targets), &target, &length, &unused, 0, &position) == HASH_KEY_IS_STRING &&
-             zend_hash_get_current_data_ex(Z_ARRVAL_P(targets), (void **) &value, &position) == SUCCESS &&
-             Z_TYPE_PP(value) == IS_LONG;
-             zend_hash_move_forward_ex(Z_ARRVAL_P(targets), &position))
-        {
-            weight = Z_LVAL_PP(value);
-            weight = weight < 1 ? 1 : weight;
-            weight = weight > 10 ? 10 : weight;
-            instance->entries_count += weight * CHASH_REPLICAS;
-            instance->targets_count ++;
-        }
-        instance->targets  = (char **)ecalloc(instance->targets_count, sizeof(char *));
-        instance->selected = (u_int32_t *)ecalloc(instance->targets_count * 2, sizeof(u_int32_t));
-        instance->entries  = (u_int32_t *)ecalloc(instance->entries_count * 2, sizeof(u_int32_t));
-        for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(targets), &position);
-             zend_hash_get_current_key_ex(Z_ARRVAL_P(targets), &target, &length, &unused, 0, &position) == HASH_KEY_IS_STRING &&
-             zend_hash_get_current_data_ex(Z_ARRVAL_P(targets), (void **) &value, &position) == SUCCESS &&
-             Z_TYPE_PP(value) == IS_LONG;
-             zend_hash_move_forward_ex(Z_ARRVAL_P(targets), &position))
-        {
-            instance->targets[targets_index] = estrdup(target);
-            weight = Z_LVAL_PP(value);
-            weight = weight < 1 ? 1 : weight;
-            weight = weight > 10 ? 10 : weight;
-            for (index = 0; index < weight * CHASH_REPLICAS; index ++)
-            {
-                snprintf(name, sizeof(name) - 1, "%s_%03d", target, index + 1);
-                instance->entries[entries_index]     = mmhash2(name, -1);
-                instance->entries[entries_index + 1] = targets_index;
-                entries_index += 2;
-            }
-            targets_index ++;
-        }
-        qsort(instance->entries, instance->entries_count, sizeof(u_int32_t) * 2, chash_sort);
+        RETURN_LONG(status)
     }
-    RETURN_LONG(instance->entries_count)
+    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(targets), &position);
+         zend_hash_get_current_key_ex(Z_ARRVAL_P(targets), &target, &length, &unused, 0, &position) == HASH_KEY_IS_STRING &&
+         zend_hash_get_current_data_ex(Z_ARRVAL_P(targets), (void **)&weight, &position) == SUCCESS &&
+         Z_TYPE_PP(weight) == IS_LONG;
+         zend_hash_move_forward_ex(Z_ARRVAL_P(targets), &position))
+    {
+        if ((status = chash_add_target(&(instance->context), target, Z_LVAL_PP(weight))) < 0)
+        {
+            RETURN_LONG(status)
+        }
+    }
+    RETURN_LONG(chash_targets_count(&(instance->context)))
 }
 
-// Actually perform the search
-static int chash_search(chash_object *instance, char *value, u_int32_t count)
-{
-    u_int32_t hash, start_index = 0, index, rank = 1;
-
-    hash = mmhash2(value, -1);
-    if (hash > instance->entries[0] && hash <= instance->entries[(instance->entries_count - 1) * 2])
-    {
-        for (start_index = 0; start_index < instance->entries_count - 1; start_index ++)
-        {
-            if (hash > instance->entries[start_index * 2] && hash <= instance->entries[(start_index + 1) * 2])
-            {
-                break;
-            }
-        }
-    }
-    memset(instance->selected, 0, instance->targets_count * sizeof(u_int32_t) * 2);
-    instance->selected[instance->entries[(start_index * 2) + 1] * 2] = rank ++;
-    count = (count < 1) ? 1 : count;
-    count = (count > instance->targets_count) ? instance->targets_count : count;;
-    while (rank <= count && start_index < instance->entries_count)
-    {
-        if (! instance->selected[instance->entries[(start_index * 2) + 1] * 2])
-        {
-            instance->selected[instance->entries[(start_index * 2) + 1] * 2] = rank ++;
-        }
-        start_index ++;
-    }
-    for (index = 0; index < instance->targets_count; index ++)
-    {
-        instance->selected[(index * 2) + 1] = index;
-    }
-    qsort(instance->selected, instance->targets_count, sizeof(u_int32_t) * 2, chash_sort);
-    return count;
-}
-
-// CHash method lookupList(name [, count]) -> array
-PHP_METHOD(CHash, lookupList)
+// CHash method clearTargets() -> long
+PHP_METHOD(CHash, clearTargets)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    u_int32_t    hash, count = 1, length, start_index = 0, index, rank = 1;
-    char         *value;
-
-    array_init(return_value);
-    if (! instance->targets_count)
-    {
-        return;
-    }
-    if (instance->targets_count == 1 || zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &value, &length, &count) != SUCCESS || length == 0)
-    {
-        add_next_index_string(return_value, instance->targets[0], 1);
-        return;
-    }
-    count = chash_search(instance, value, count);
-    for (index = instance->targets_count - count; index < instance->targets_count; index ++)
-    {
-        add_next_index_string(return_value, instance->targets[instance->selected[(index * 2) + 1]], 1);
-    }
+    RETURN_LONG(chash_clear_targets(&(instance->context)))
 }
 
-// CHash method lookupBalance(name [, count]) -> string
-PHP_METHOD(CHash, lookupBalance)
+// CHash method getTargetsCount() -> long
+PHP_METHOD(CHash, getTargetsCount)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    u_int32_t    count = 1, length;
-    char         *value;
+    RETURN_LONG(chash_targets_count(&(instance->context)))
+}
 
-    if (! instance->targets_count)
+// CHash method freeze() -> long
+PHP_METHOD(CHash, freeze)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    RETURN_LONG(chash_freeze(&(instance->context)))
+}
+
+// CHash method unfreeze() -> long
+PHP_METHOD(CHash, unfreeze)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    RETURN_LONG(chash_unfreeze(&(instance->context)))
+}
+
+// CHash method serialize() -> string
+PHP_METHOD(CHash, serialize)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    u_char       *serialized;
+    int          size;
+
+    if ((size = chash_serialize(&(instance->context), &serialized)) < 0)
     {
         RETURN_STRING("", 1)
     }
-    if (instance->targets_count == 1 || zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &value, &length, &count) != SUCCESS || length == 0)
+    RETVAL_STRINGL((char *)serialized, size, 1);
+    free(serialized);
+}
+
+// CHash method unserialize(<serialized>) -> long
+PHP_METHOD(CHash, unserialize)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    uint         length;
+    u_char       *serialized;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &serialized, &length) != SUCCESS || length == 0)
     {
-        RETURN_STRING(instance->targets[0], 1)
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
     }
-    count = (count < 1) ? 1 : count;
-    count = (count > instance->targets_count) ? instance->targets_count : count;
-    count = (rand() % count) + 1;
-    count = chash_search(instance, value, count);
-    RETURN_STRING(instance->targets[instance->selected[((instance->targets_count - 1) * 2) + 1]], 1)
+    RETURN_LONG(chash_unserialize(&(instance->context), serialized, length))
+}
+
+// CHash method serializeToFile(<path>) -> long
+PHP_METHOD(CHash, serializeToFile)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    uint         length;
+    char         *path;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
+    {
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+    }
+    RETURN_LONG(chash_file_serialize(&(instance->context), path))
+}
+
+// CHash method unserializeFromFile(<path>) -> long
+PHP_METHOD(CHash, unserializeFromFile)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    uint         length;
+    char         *path;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
+    {
+        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+    }
+    RETURN_LONG(chash_file_unserialize(&(instance->context), path))
+}
+
+// CHash method lookupList(<candidate>[, <count>]) -> array
+PHP_METHOD(CHash, lookupList)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    uint         count = 1, length, index;
+    int          status;
+    char         *candidate, **targets;
+
+    array_init(return_value);
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
+    {
+        return;
+    }
+    if ((status = chash_lookup(&(instance->context), candidate, count, &targets)) < 0)
+    {
+        return;
+    }
+    for (index = 0; index < status; index ++)
+    {
+        add_next_index_string(return_value, targets[index], 1);
+    }
+}
+
+// CHash method lookupBalance(<name>[, <count>]) -> string
+PHP_METHOD(CHash, lookupBalance)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    uint         count = 1, length;
+    int          status;
+    char         *candidate, *target;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
+    {
+        RETURN_STRING("", 1)
+    }
+    if (chash_lookup_balance(&(instance->context), candidate, count, &target) < 0)
+    {
+        RETURN_STRING("", 1)
+    }
+    RETURN_STRING(target, 1)
 }
 
 // CHash module v-table
 static function_entry chash_class_methods[] =
 {
+    PHP_ME(CHash, addTarget, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, removeTarget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, setTargets, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, clearTargets, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, getTargetsCount, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, freeze, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, unfreeze, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, serialize, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, unserialize, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, serializeToFile, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(CHash, unserializeFromFile, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, lookupList, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, lookupBalance, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
@@ -214,30 +227,8 @@ static function_entry chash_class_methods[] =
 // CHash extended object destructor
 static void chash_free(chash_object *instance TSRMLS_DC)
 {
-    int index;
-
     zend_object_std_dtor(&(instance->zo) TSRMLS_CC);
-    if (instance->targets_count)
-    {
-        for (index = 0; index < instance->targets_count; index ++)
-        {
-            efree(instance->targets[index]);
-        }
-        efree(instance->targets);
-        instance->targets        = NULL;
-        instance->targets_count = 0;
-    }
-    if (instance->entries_count)
-    {
-        efree(instance->entries);
-        instance->entries       = NULL;
-        instance->entries_count = 0;
-    }
-    if (instance->selected)
-    {
-        efree(instance->selected);
-        instance->selected = NULL;
-    }
+    chash_terminate(&(instance->context), 0);
     efree(instance);
     instance = NULL;
 }
@@ -250,6 +241,7 @@ zend_object_value chash_allocate(zend_class_entry *class_entry TSRMLS_DC)
 
     instance = ecalloc(1, sizeof(chash_object));
     zend_object_std_init(&(instance->zo), class_entry TSRMLS_CC);
+    chash_initialize(&(instance->context), 0);
     value.handle = zend_objects_store_put(instance, (zend_objects_store_dtor_t)zend_objects_destroy_object,
                                                     (zend_objects_free_object_storage_t)chash_free, NULL TSRMLS_CC);
     value.handlers = zend_get_std_object_handlers();
@@ -261,10 +253,16 @@ PHP_MINIT_FUNCTION(chash)
 {
     zend_class_entry class_entry;
 
-    srand(getpid() + time(NULL));
     INIT_CLASS_ENTRY(class_entry, "CHash", chash_class_methods);
     chash_class_entry = zend_register_internal_class(&class_entry TSRMLS_CC);
     chash_class_entry->create_object = chash_allocate;
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_DONE", CHASH_ERROR_DONE, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_MEMORY", CHASH_ERROR_MEMORY, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_IO", CHASH_ERROR_IO, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_INVALID_PARAMETER", CHASH_ERROR_INVALID_PARAMETER, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_ALREADY_FROZEN", CHASH_ERROR_ALREADY_FROZEN, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FROZEN", CHASH_ERROR_NOT_FROZEN, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FOUND", CHASH_ERROR_NOT_FOUND, CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 

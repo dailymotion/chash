@@ -16,7 +16,7 @@
 #define FREEZEPATH  "/tmp/chash.freeze"
 
 // Helper functions
-static struct timeval time_start, time_end;
+static struct timeval time_start;
 static int            test_steps = 0;
 static int            test_status = 0;
 static char           test_message[1024];
@@ -55,8 +55,9 @@ static void test_step(int status, char *format, ...)
 }
 static void test_end(char *format, ...)
 {
-    va_list arguments;
-    double  time_spent;
+    struct timeval time_end;
+    va_list        arguments;
+    double         time_spent;
 
     gettimeofday(&time_end, NULL);
     time_spent = (((double)(time_end.tv_sec - time_start.tv_sec)) * 1000) +
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
               "invalid targets count %d", chash_targets_count(&context));
     test_end("targets count is now %d", chash_targets_count(&context));
 
-    test_start("clean_target");
+    test_start("clear_targets");
     test_step(chash_clear_targets(&context), "targets count is still %d", chash_targets_count(&context));
     test_end(NULL);
     for (index = 1; index <= TARGETS; index ++)

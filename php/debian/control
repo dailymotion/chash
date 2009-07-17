@@ -1,0 +1,13 @@
+Source: php5-chash
+Section: web
+Priority: optional
+Maintainer: Pierre-Yves Kerembellec <pyke@dailymotion.com>
+Standards-Version: 3.7.2
+Build-Depends: debhelper (>= 5), autotools-dev, php5-dev
+
+Package: php5-chash
+Section: web
+Architecture: any
+Priority: optional
+Depends: libchash1.0.0
+Description: CHash PHP extension

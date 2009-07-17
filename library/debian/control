@@ -8,11 +8,12 @@ Build-Depends: debhelper (>= 5)
 Package: libchash1.0.0
 Section: libs
 Architecture: any
-Priority: important
+Priority: optional
 Description: CHash shared libraries
 
 Package: libchash-dev
 Section: libdevel
 Architecture: any
+Priority: optional
 Depends: libchash1.0.0
 Description: CHash development libraries and files

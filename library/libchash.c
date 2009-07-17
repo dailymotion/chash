@@ -123,7 +123,7 @@ int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
     }
     if (context->frozen)
     {
-        return CHASH_ERROR_FROZEN;
+        return CHASH_ERROR_ALREADY_FROZEN;
     }
     weight = weight < 1 ? 1 : weight;
     weight = weight > 10 ? 10 : weight;
@@ -171,7 +171,7 @@ int chash_remove_target(CHASH_CONTEXT *context, const char *target)
     }
     if (context->frozen)
     {
-        return CHASH_ERROR_FROZEN;
+        return CHASH_ERROR_ALREADY_FROZEN;
     }
     if (context->targets)
     {
@@ -204,7 +204,7 @@ int chash_clear_targets(CHASH_CONTEXT *context)
     }
     if (context->frozen)
     {
-        return CHASH_ERROR_FROZEN;
+        return CHASH_ERROR_ALREADY_FROZEN;
     }
     if (context->targets)
     {

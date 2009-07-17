@@ -1,0 +1,24 @@
+# Consistent hashing library PHP extension
+# pyke@dailymotion.com - 05/2009
+
+test: modules/chash.so
+	./chash_test.php
+
+modules/chash.so: Makefile chash.c
+	make -f Makefile install
+
+Makefile: config.m4
+	phpize
+	CFLAGS="-Wall -O3" ./configure
+
+clean:
+
+distclean: debclean
+	make -f Makefile distclean
+	phpize --clean
+
+deb:
+	debuild -i -us -uc -b
+
+debclean:
+	debuild clean

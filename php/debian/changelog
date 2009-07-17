@@ -1,0 +1,5 @@
+php5-chash (1.0.0) stable; urgency=low
+
+  * CHash PHP extension package
+
+ -- Pierre-Yves Kerembellec <pyke@dailymotion.com>  Wed, 08 Jul 2009 15:44:28 +0200

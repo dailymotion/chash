@@ -11,7 +11,7 @@
 #define CHASH_ERROR_INVALID_PARAMETER    (-10)
 #define CHASH_ERROR_ALREADY_INITIALIZED  (-11)
 #define CHASH_ERROR_NOT_INITIALIZED      (-12)
-#define CHASH_ERROR_FROZEN               (-13)
+#define CHASH_ERROR_ALREADY_FROZEN       (-13)
 #define CHASH_ERROR_NOT_FROZEN           (-14)
 #define CHASH_ERROR_NOT_FOUND            (-15)
 

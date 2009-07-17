@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+
+build: build-stamp
+
+build-stamp:
+	dh_testdir
+	$(MAKE) -f Makefile.chash
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	$(MAKE) -f Makefile.chash clean
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installinit
+	dh_fixperms
+	install -D -m 644 modules/chash.so debian/php5-chash`php-config --extension-dir`/chash.so
+	install -D -m 644 debian/chash.ini debian/php5-chash/etc/php5/conf.d/chash.ini
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+.PHONY: build clean binary-arch binary install
