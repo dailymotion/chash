@@ -191,7 +191,6 @@ PHP_METHOD(CHash, lookupBalance)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     uint         count = 1, length;
-    int          status;
     char         *candidate, *target;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
