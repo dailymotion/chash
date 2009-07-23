@@ -5,17 +5,77 @@
 #include "config.h"
 #endif
 #include "php.h"
+#include "zend_exceptions.h"
 #include "libchash.h"
 
 // CHash composite object definition
 typedef struct
 {
     zend_object   zo;
+    u_char        use_exceptions;
     CHASH_CONTEXT context;
 } chash_object;
 
 // CHash class entry
 zend_class_entry *chash_class_entry;
+
+// CHash errors/exceptions management
+static zend_class_entry *chash_memory_exception,
+                        *chash_io_exception,
+                        *chash_invalid_parameter_exception,
+                        *chash_already_frozen_exception,
+                        *chash_not_frozen_exception,
+                        *chash_not_found_exception;
+
+static int chash_return(chash_object *instance, int status)
+{
+    if (status < 0 && instance->use_exceptions)
+    {
+        switch (status)
+        {
+            case CHASH_ERROR_MEMORY:
+                 zend_throw_exception(chash_memory_exception, "Memory allocation error", CHASH_ERROR_MEMORY);
+                 break;
+
+            case CHASH_ERROR_IO:
+                 zend_throw_exception(chash_io_exception, "File I/O error", CHASH_ERROR_IO);
+                 break;
+
+            case CHASH_ERROR_INVALID_PARAMETER:
+                 zend_throw_exception(chash_invalid_parameter_exception, "Invalid parameter", CHASH_ERROR_INVALID_PARAMETER);
+                 break;
+
+            case CHASH_ERROR_ALREADY_FROZEN:
+                 zend_throw_exception(chash_already_frozen_exception, "Context already frozen", CHASH_ERROR_ALREADY_FROZEN);
+                 break;
+
+            case CHASH_ERROR_NOT_FROZEN:
+                 zend_throw_exception(chash_not_frozen_exception, "Context not frozen", CHASH_ERROR_NOT_FROZEN);
+                 break;
+
+            case CHASH_ERROR_NOT_FOUND:
+                 zend_throw_exception(chash_not_found_exception, "No element found", CHASH_ERROR_NOT_FOUND);
+                 break;
+
+            default:
+                 zend_throw_exception(NULL, "Unknown CHash exception", 0);
+        }
+    }
+    return status;
+}
+
+// CHash method useExceptions(bool) -> bool
+PHP_METHOD(CHash, useExceptions)
+{
+    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+    u_char       use;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "b", &use) == SUCCESS)
+    {
+        instance->use_exceptions = use;
+    }
+    RETVAL_BOOL(instance->use_exceptions);
+}
 
 // CHash method addTarget(<target>[, <weight>]) -> long
 PHP_METHOD(CHash, addTarget)
@@ -26,9 +86,9 @@ PHP_METHOD(CHash, addTarget)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &target, &length, &weight) != SUCCESS || length == 0)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
-    RETURN_LONG(chash_add_target(&(instance->context), target, weight))
+    RETVAL_LONG(chash_return(instance, chash_add_target(&(instance->context), target, weight)));
 }
 
 // CHash method removeTarget(<target>) -> long
@@ -40,9 +100,9 @@ PHP_METHOD(CHash, removeTarget)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &target, &length) != SUCCESS || length == 0)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
-    RETURN_LONG(chash_remove_target(&(instance->context), target))
+    RETURN_LONG(chash_return(instance, chash_remove_target(&(instance->context), target)))
 }
 
 // CHash method setTargets(array(<target> => <weight> [, ...])) -> long
@@ -58,11 +118,11 @@ PHP_METHOD(CHash, setTargets)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &targets) != SUCCESS)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER)
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
     if ((status = chash_clear_targets(&(instance->context))) < 0)
     {
-        RETURN_LONG(status)
+        RETURN_LONG(chash_return(instance, status))
     }
     for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(targets), &position);
          zend_hash_get_current_key_ex(Z_ARRVAL_P(targets), &target, &length, &unused, 0, &position) == HASH_KEY_IS_STRING &&
@@ -72,38 +132,38 @@ PHP_METHOD(CHash, setTargets)
     {
         if ((status = chash_add_target(&(instance->context), target, Z_LVAL_PP(weight))) < 0)
         {
-            RETURN_LONG(status)
+            RETURN_LONG(chash_return(instance, status))
         }
     }
-    RETURN_LONG(chash_targets_count(&(instance->context)))
+    RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))))
 }
 
 // CHash method clearTargets() -> long
 PHP_METHOD(CHash, clearTargets)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_clear_targets(&(instance->context)))
+    RETURN_LONG(chash_return(instance, chash_clear_targets(&(instance->context))))
 }
 
 // CHash method getTargetsCount() -> long
 PHP_METHOD(CHash, getTargetsCount)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_targets_count(&(instance->context)))
+    RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))))
 }
 
 // CHash method freeze() -> long
 PHP_METHOD(CHash, freeze)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_freeze(&(instance->context)))
+    RETURN_LONG(chash_return(instance, chash_freeze(&(instance->context))))
 }
 
 // CHash method unfreeze() -> long
 PHP_METHOD(CHash, unfreeze)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_unfreeze(&(instance->context)))
+    RETURN_LONG(chash_return(instance, chash_unfreeze(&(instance->context))))
 }
 
 // CHash method serialize() -> string
@@ -115,6 +175,7 @@ PHP_METHOD(CHash, serialize)
 
     if ((size = chash_serialize(&(instance->context), &serialized)) < 0)
     {
+        chash_return(instance, size);
         RETURN_STRING("", 1)
     }
     RETVAL_STRINGL((char *)serialized, size, 1);
@@ -130,9 +191,9 @@ PHP_METHOD(CHash, unserialize)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &serialized, &length) != SUCCESS || length == 0)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
-    RETURN_LONG(chash_unserialize(&(instance->context), serialized, length))
+    RETURN_LONG(chash_return(instance, chash_unserialize(&(instance->context), serialized, length)))
 }
 
 // CHash method serializeToFile(<path>) -> long
@@ -144,9 +205,9 @@ PHP_METHOD(CHash, serializeToFile)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
-    RETURN_LONG(chash_file_serialize(&(instance->context), path))
+    RETURN_LONG(chash_return(instance, chash_file_serialize(&(instance->context), path)))
 }
 
 // CHash method unserializeFromFile(<path>) -> long
@@ -158,9 +219,9 @@ PHP_METHOD(CHash, unserializeFromFile)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
     {
-        RETURN_LONG(CHASH_ERROR_INVALID_PARAMETER);
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
     }
-    RETURN_LONG(chash_file_unserialize(&(instance->context), path))
+    RETURN_LONG(chash_return(instance, chash_file_unserialize(&(instance->context), path)))
 }
 
 // CHash method lookupList(<candidate>[, <count>]) -> array
@@ -174,10 +235,12 @@ PHP_METHOD(CHash, lookupList)
     array_init(return_value);
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
     {
+        chash_return(instance, CHASH_ERROR_INVALID_PARAMETER);
         return;
     }
     if ((status = chash_lookup(&(instance->context), candidate, count, &targets)) < 0)
     {
+        chash_return(instance, status);
         return;
     }
     for (index = 0; index < status; index ++)
@@ -191,22 +254,26 @@ PHP_METHOD(CHash, lookupBalance)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     uint         count = 1, length;
+    int          status;
     char         *candidate, *target;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
     {
+        chash_return(instance, CHASH_ERROR_INVALID_PARAMETER);
         RETURN_STRING("", 1)
     }
-    if (chash_lookup_balance(&(instance->context), candidate, count, &target) < 0)
+    if ((status = chash_lookup_balance(&(instance->context), candidate, count, &target)) < 0)
     {
+        chash_return(instance, status);
         RETURN_STRING("", 1)
     }
     RETURN_STRING(target, 1)
 }
 
 // CHash module v-table
-static function_entry chash_class_methods[] =
+static zend_function_entry chash_class_methods[] =
 {
+    PHP_ME(CHash, useExceptions, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, addTarget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, removeTarget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, setTargets, NULL, ZEND_ACC_PUBLIC)
@@ -241,6 +308,7 @@ zend_object_value chash_allocate(zend_class_entry *class_entry TSRMLS_DC)
     instance = ecalloc(1, sizeof(chash_object));
     zend_object_std_init(&(instance->zo), class_entry TSRMLS_CC);
     chash_initialize(&(instance->context), 0);
+    instance->use_exceptions = 1;
     value.handle = zend_objects_store_put(instance, (zend_objects_store_dtor_t)zend_objects_destroy_object,
                                                     (zend_objects_free_object_storage_t)chash_free, NULL TSRMLS_CC);
     value.handlers = zend_get_std_object_handlers();
@@ -255,6 +323,7 @@ PHP_MINIT_FUNCTION(chash)
     INIT_CLASS_ENTRY(class_entry, "CHash", chash_class_methods);
     chash_class_entry = zend_register_internal_class(&class_entry TSRMLS_CC);
     chash_class_entry->create_object = chash_allocate;
+
     REGISTER_LONG_CONSTANT("CHASH_ERROR_DONE", CHASH_ERROR_DONE, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_MEMORY", CHASH_ERROR_MEMORY, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_IO", CHASH_ERROR_IO, CONST_CS | CONST_PERSISTENT);
@@ -262,6 +331,20 @@ PHP_MINIT_FUNCTION(chash)
     REGISTER_LONG_CONSTANT("CHASH_ERROR_ALREADY_FROZEN", CHASH_ERROR_ALREADY_FROZEN, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FROZEN", CHASH_ERROR_NOT_FROZEN, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FOUND", CHASH_ERROR_NOT_FOUND, CONST_CS | CONST_PERSISTENT);
+
+    INIT_CLASS_ENTRY(class_entry, "CHashMemoryException", NULL);
+    chash_memory_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    INIT_CLASS_ENTRY(class_entry, "CHashIOException", NULL);
+    chash_io_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    INIT_CLASS_ENTRY(class_entry, "CHashInvalidParameterException", NULL);
+    chash_invalid_parameter_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    INIT_CLASS_ENTRY(class_entry, "CHashAlreadyFrozenException", NULL);
+    chash_already_frozen_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    INIT_CLASS_ENTRY(class_entry, "CHashNotFrozenException", NULL);
+    chash_not_frozen_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    INIT_CLASS_ENTRY(class_entry, "CHashNotFoundException", NULL);
+    chash_not_found_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+
     return SUCCESS;
 }
 

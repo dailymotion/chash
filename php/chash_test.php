@@ -66,6 +66,7 @@ function test_end($message)
 // Load extension and create CHash instance
 dl('chash.so');
 $chash = new CHash();
+$chash->useExceptions(false);
 
 // Execute tests
 print "\n";
