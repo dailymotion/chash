@@ -303,10 +303,7 @@ int chash_unfreeze(CHASH_CONTEXT *context)
     {
         return CHASH_ERROR_NOT_INITIALIZED;
     }
-    if (! context->frozen)
-    {
-        return CHASH_ERROR_DONE;
-    }
+    context->frozen = 0;
     return CHASH_ERROR_DONE;
 }
 
