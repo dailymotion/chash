@@ -11,9 +11,9 @@
 #include "libchash.h"
 
 // Defines
-#define TARGETS     (100)
-#define CANDIDATES  (200000)
-#define FREEZEPATH  "/tmp/chash.freeze"
+#define TARGETS       (100)
+#define CANDIDATES    (200000)
+#define SERIALIZEPATH "/tmp/chash.serialize"
 
 // Helper functions
 static struct timeval time_start;
@@ -130,14 +130,6 @@ int main(int argc, char **argv)
         chash_add_target(&context, buffer, 1);
     }
 
-    test_start("freeze");
-    test_step((status = chash_freeze(&context)) < 0 ? status : 0, NULL);
-    test_end("continuum count is %d", chash_freeze(&context));
-
-    test_start("unfreeze");
-    test_step((status = chash_unfreeze(&context)) < 0 ? status : 0, NULL);
-    test_end(NULL);
-
     test_start("serialize");
     test_step((size1 = chash_serialize(&context, &serialized1)) < 0 ? size1 : 0, NULL);
     test_end("serialized size is %d bytes", size1);
@@ -153,13 +145,13 @@ int main(int argc, char **argv)
     test_end(NULL);
 
     test_start("file_serialize");
-    unlink(FREEZEPATH);
-    test_step((size1 = chash_file_serialize(&context, FREEZEPATH)) < 0 ? size1 : 0, NULL);
+    unlink(SERIALIZEPATH);
+    test_step((size1 = chash_file_serialize(&context, SERIALIZEPATH)) < 0 ? size1 : 0, NULL);
     test_end("serialized size is %d bytes", size1);
 
     chash_initialize(&context, 1);
     test_start("file_unserialize");
-    test_step((count = chash_file_unserialize(&context, FREEZEPATH)) < 0 ? count : 0, NULL);
+    test_step((count = chash_file_unserialize(&context, SERIALIZEPATH)) < 0 ? count : 0, NULL);
     test_end("continuum count is %d", count);
 
     test_start("file serialize coherency");

@@ -11,9 +11,7 @@
 #define CHASH_ERROR_INVALID_PARAMETER    (-10)
 #define CHASH_ERROR_ALREADY_INITIALIZED  (-11)
 #define CHASH_ERROR_NOT_INITIALIZED      (-12)
-#define CHASH_ERROR_ALREADY_FROZEN       (-13)
-#define CHASH_ERROR_NOT_FROZEN           (-14)
-#define CHASH_ERROR_NOT_FOUND            (-15)
+#define CHASH_ERROR_NOT_FOUND            (-13)
 
 #pragma pack(1)
 
@@ -51,8 +49,6 @@ int chash_add_target(CHASH_CONTEXT *, const char *, u_char);
 int chash_remove_target(CHASH_CONTEXT *, const char *);
 int chash_clear_targets(CHASH_CONTEXT *);
 int chash_targets_count(CHASH_CONTEXT *);
-int chash_freeze(CHASH_CONTEXT *);
-int chash_unfreeze(CHASH_CONTEXT *);
 int chash_serialize(CHASH_CONTEXT *, u_char **);
 int chash_unserialize(CHASH_CONTEXT *, const u_char *, u_int32_t);
 int chash_file_serialize(CHASH_CONTEXT *, const char *);
