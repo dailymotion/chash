@@ -29,10 +29,6 @@ chash_return(int status, int zero_is_none)
       PyErr_NoMemory();
       break;
       
-    case CHASH_ERROR_ALREADY_FROZEN:
-      PyErr_SetString(CHashError, "Context already frozen");
-      break;
-      
     case CHASH_ERROR_NOT_FOUND:
       PyErr_SetString(CHashError, "No element found");
       break;
@@ -111,32 +107,12 @@ do_clear_targets(PyObject *pyself, PyObject *args)
 //----------------------------------------------------------------------------------------                                                                                                                                       
 //                                                                                                                                                                                                                               
 static PyObject *
-do_freeze(PyObject *pyself, PyObject *args)
-{
-  CHashObject* self = (CHashObject*)pyself;
-
-  return chash_return(chash_freeze(&(self->context)), 1);
-}
-
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
-static PyObject *
-do_unfreeze(PyObject *pyself, PyObject *args)
-{
-  CHashObject* self = (CHashObject*)pyself;
-
-  return chash_return(chash_unfreeze(&(self->context)), 1);
-}
-
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
-static PyObject *
 do_serialize(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
-  u_char       *serialized;
+  u_char*      serialized;
   int          size;
-  PyObject* retval;
+  PyObject*    retval;
 
   size = chash_serialize(&(self->context), &serialized);
 
@@ -159,7 +135,7 @@ static PyObject *
 do_unserialize(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
-  u_char       *serialized;
+  u_char*      serialized;
   u_int32_t    length;
 
   if (!PyArg_ParseTuple(args, "s#", &serialized, &length))
@@ -171,15 +147,43 @@ do_unserialize(PyObject *pyself, PyObject *args)
 //----------------------------------------------------------------------------------------                                                                                                                                       
 //                                                                                                                                                                                                                               
 static PyObject *
+do_serialize_to_file(PyObject *pyself, PyObject *args)
+{
+  CHashObject* self = (CHashObject*)pyself;
+  char*        path;
+
+  if (!PyArg_ParseTuple(args, "s", &path))
+    return NULL;
+
+  return chash_return(chash_file_serialize(&(self->context), path), 1);
+}
+
+//----------------------------------------------------------------------------------------
+//
+static PyObject *
+do_unserialize_from_file(PyObject *pyself, PyObject *args)
+{
+  CHashObject* self = (CHashObject*)pyself;
+  char*        path;
+
+  if (!PyArg_ParseTuple(args, "s", &path))
+    return NULL;
+
+  return chash_return(chash_file_unserialize(&(self->context), path), 1);
+}
+
+//----------------------------------------------------------------------------------------
+//
+static PyObject *
 do_lookup_list(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
-  char *candidate;
-  uint count = 1;
-  int status;
-  uint index;
-  char **targets;
-  PyObject* retval = PyList_New(0);
+  char*        candidate;
+  uint         count = 1;
+  int          status;
+  uint         index;
+  char**       targets;
+  PyObject*    retval = PyList_New(0);
 
   if (!PyArg_ParseTuple(args, "s|l", &candidate, &count))
     return NULL;
@@ -196,14 +200,16 @@ do_lookup_list(PyObject *pyself, PyObject *args)
   return retval;
 }
 
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_lookup_balance(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
-  char *candidate;
-  uint count = 1;
-  int status;
-  char *target;
+  char*        candidate;
+  uint         count = 1;
+  int          status;
+  char*        target;
 
   if (!PyArg_ParseTuple(args, "s|l", &candidate, &count))
     return NULL;
@@ -215,8 +221,8 @@ do_lookup_balance(PyObject *pyself, PyObject *args)
   return PyString_FromString(target);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyMethodDef chash_methods[] = {
     {
       "add_target",  do_add_target, METH_VARARGS, 
@@ -224,7 +230,7 @@ static PyMethodDef chash_methods[] = {
     },
     {
       "remove_target",  do_remove_target, METH_VARARGS, 
-      "remove_target(target) -- FIXME"
+      "remove_target(target)"
     },
     {
       "count_targets", do_count_targets, METH_NOARGS,
@@ -236,20 +242,20 @@ static PyMethodDef chash_methods[] = {
       "clear_targets()"
     },
     {
-      "freeze", do_freeze, METH_NOARGS,
-      "freeze()"
-    },
-    {
-      "unfreeze", do_unfreeze, METH_NOARGS,
-      "unfreeze()"
-    },
-    {
       "serialize", do_serialize, METH_NOARGS,
       "serialize()"
     },
     {
       "unserialize", do_unserialize, METH_VARARGS,
       "unserialize()"
+    },
+    {
+      "serialize_to_file", do_serialize_to_file, METH_VARARGS,
+      "serialize_to_file(path)"
+    },
+    {
+      "unserialize_from_file", do_unserialize_from_file, METH_VARARGS,
+      "unserialize_from_file(path)"
     },
     {
       "lookup_list", do_lookup_list, METH_VARARGS,
