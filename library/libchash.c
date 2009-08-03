@@ -55,6 +55,80 @@ static u_int32_t chash_mmhash2(const void *key, int key_size)
     return hash;
 }
 
+// Compute continuum and block future modifications
+static int chash_sort32(const void *element1, const void *element2)
+{
+    return (*(u_int32_t *)element1 > *(u_int32_t *)element2) ? 1 : -1;
+}
+static int chash_freeze(CHASH_CONTEXT *context)
+{
+    u_char weight, replica;
+    char   target[128];
+    int    index, position = 0;
+
+    if (! context)
+    {
+        return CHASH_ERROR_INVALID_PARAMETER;
+    }
+    if (context->magic != CHASH_MAGIC)
+    {
+        return CHASH_ERROR_NOT_INITIALIZED;
+    }
+    if (context->frozen)
+    {
+        return context->items_count;
+    }
+    if (! context->targets_count)
+    {
+        return CHASH_ERROR_NOT_FOUND;
+    }
+    if (context->continuum)
+    {
+        free(context->continuum);
+        context->continuum = NULL;
+    }
+    context->items_count = 0;
+    for (index = 0; index < context->targets_count; index ++)
+    {
+        context->items_count += (context->targets[index].weight * CHASH_REPLICAS);
+    }
+    if (! (context->continuum = (CHASH_ITEM *)calloc(context->items_count, sizeof(CHASH_ITEM))))
+    {
+        return CHASH_ERROR_MEMORY;
+    }
+    for (index = 0; index < context->targets_count; index ++)
+    {
+        for (weight = 0; weight < context->targets[index].weight; weight ++)
+        {
+            for (replica = 0; replica < CHASH_REPLICAS; replica ++)
+            {
+                snprintf(target, sizeof(target) - 1, "%s%d%d", context->targets[index].name, weight, replica);
+                context->continuum[position].hash   = chash_mmhash2(target, -1);
+                context->continuum[position].target  = index;
+                position ++;
+            }
+        }
+    }
+    qsort(context->continuum, context->items_count, sizeof(CHASH_ITEM), chash_sort32);
+    context->frozen = 1;
+    return context->items_count;
+}
+
+// Discard continuum and allow modifications back
+static int chash_unfreeze(CHASH_CONTEXT *context)
+{
+    if (! context)
+    {
+        return CHASH_ERROR_INVALID_PARAMETER;
+    }
+    if (context->magic != CHASH_MAGIC)
+    {
+        return CHASH_ERROR_NOT_INITIALIZED;
+    }
+    context->frozen = 0;
+    return CHASH_ERROR_DONE;
+}
+
 // Initialize context
 int chash_initialize(CHASH_CONTEXT *context, u_char force)
 {
@@ -112,18 +186,15 @@ int chash_terminate(CHASH_CONTEXT *context, u_char force)
 int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
 {
     u_int16_t index = 0;
+    int       status;
 
-    if (! context || ! target)
+    if (! target)
     {
         return CHASH_ERROR_INVALID_PARAMETER;
     }
-    if (context->magic != CHASH_MAGIC)
+    if ((status = chash_unfreeze(context)) < 0)
     {
-        return CHASH_ERROR_NOT_INITIALIZED;
-    }
-    if (context->frozen)
-    {
-        return CHASH_ERROR_ALREADY_FROZEN;
+        return status;
     }
     weight = weight < 1 ? 1 : weight;
     weight = weight > 10 ? 10 : weight;
@@ -160,18 +231,15 @@ int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
 int chash_remove_target(CHASH_CONTEXT *context, const char *target)
 {
     u_int16_t index;
+    int       status;
 
-    if (! context || ! target)
+    if (! target)
     {
         return CHASH_ERROR_INVALID_PARAMETER;
     }
-    if (context->magic != CHASH_MAGIC)
+    if ((status = chash_unfreeze(context)) < 0)
     {
-        return CHASH_ERROR_NOT_INITIALIZED;
-    }
-    if (context->frozen)
-    {
-        return CHASH_ERROR_ALREADY_FROZEN;
+        return status;
     }
     if (context->targets)
     {
@@ -193,18 +261,11 @@ int chash_remove_target(CHASH_CONTEXT *context, const char *target)
 int chash_clear_targets(CHASH_CONTEXT *context)
 {
     u_int16_t index;
+    int       status;
 
-    if (! context)
+    if ((status = chash_unfreeze(context)) < 0)
     {
-        return CHASH_ERROR_INVALID_PARAMETER;
-    }
-    if (context->magic != CHASH_MAGIC)
-    {
-        return CHASH_ERROR_NOT_INITIALIZED;
-    }
-    if (context->frozen)
-    {
-        return CHASH_ERROR_ALREADY_FROZEN;
+        return status;
     }
     if (context->targets)
     {
@@ -231,80 +292,6 @@ int chash_targets_count(CHASH_CONTEXT *context)
         return CHASH_ERROR_NOT_INITIALIZED;
     }
     return context->targets_count;
-}
-
-// Compute continuum and block future modifications
-static int chash_sort32(const void *element1, const void *element2)
-{
-    return (*(u_int32_t *)element1 > *(u_int32_t *)element2) ? 1 : -1;
-}
-int chash_freeze(CHASH_CONTEXT *context)
-{
-    u_char weight, replica;
-    char   target[128];
-    int    index, position = 0;
-
-    if (! context)
-    {
-        return CHASH_ERROR_INVALID_PARAMETER;
-    }
-    if (context->magic != CHASH_MAGIC)
-    {
-        return CHASH_ERROR_NOT_INITIALIZED;
-    }
-    if (context->frozen)
-    {
-        return context->items_count;
-    }
-    if (! context->targets_count)
-    {
-        return CHASH_ERROR_NOT_FOUND;
-    }
-    if (context->continuum)
-    {
-        free(context->continuum);
-        context->continuum = NULL;
-    }
-    context->items_count = 0;
-    for (index = 0; index < context->targets_count; index ++)
-    {
-        context->items_count += (context->targets[index].weight * CHASH_REPLICAS);
-    }
-    if (! (context->continuum = (CHASH_ITEM *)calloc(context->items_count, sizeof(CHASH_ITEM))))
-    {
-        return CHASH_ERROR_MEMORY;
-    }
-    for (index = 0; index < context->targets_count; index ++)
-    {
-        for (weight = 0; weight < context->targets[index].weight; weight ++)
-        {
-            for (replica = 0; replica < CHASH_REPLICAS; replica ++)
-            {
-                snprintf(target, sizeof(target) - 1, "%s%d%d", context->targets[index].name, weight, replica);
-                context->continuum[position].hash   = chash_mmhash2(target, -1);
-                context->continuum[position].target  = index;
-                position ++;
-            }
-        }
-    }
-    qsort(context->continuum, context->items_count, sizeof(CHASH_ITEM), chash_sort32);
-    context->frozen = 1;
-    return context->items_count;
-}
-
-// Discard continuum and allow modifications back
-int chash_unfreeze(CHASH_CONTEXT *context)
-{
-    if (! context)
-    {
-        return CHASH_ERROR_INVALID_PARAMETER;
-    }
-    if (context->magic != CHASH_MAGIC)
-    {
-        return CHASH_ERROR_NOT_INITIALIZED;
-    }
-    context->frozen = 0;
-    return CHASH_ERROR_DONE;
 }
 
 // Save context into a memory chunk (implicit freeze)

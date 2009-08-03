@@ -1,9 +1,9 @@
 #!/usr/bin/php
 <?php
 // Defines
-define('TARGETS',    100);
-define('CANDIDATES', 200000);
-define('FREEZEPATH', '/tmp/chash.freeze');
+define('TARGETS',       100);
+define('CANDIDATES',    200000);
+define('SERIALIZEPATH', '/tmp/chash.serialize');
 
 // Helper functions
 $time_start   = 0;
@@ -100,14 +100,6 @@ for ($index = 1; $index <= TARGETS; $index ++)
 test_step(($count = $chash->setTargets($targets)) < 0 ? $count : 0);
 test_end('set ' . $count . ' targets');
 
-test_start('freeze');
-test_step(($count = $chash->freeze()) < 0 ? $count : 0);
-test_end('continuum size is ' . $count);
-
-test_start('unfreeze');
-test_step($chash->unfreeze());
-test_end('');
-
 test_start('serialize');
 test_step(($serialized1 = $chash->serialize()) == '' ? -1 : 0);
 test_end('serialized size is ' . strlen($serialized1) . ' bytes');
@@ -123,13 +115,13 @@ test_step($serialized1 != $serialized2 ? -1 : 0);
 test_end('');
 
 test_start('serializeToFile');
-@unlink(FREEZEPATH);
-test_step(($size1 = $chash->serializeToFile(FREEZEPATH)) < 0 ? $size1 : 0);
+@unlink(SERIALIZEPATH);
+test_step(($size1 = $chash->serializeToFile(SERIALIZEPATH)) < 0 ? $size1 : 0);
 test_end('serialized size is ' . $size1 . ' bytes');
 
 $chash = new CHash();
 test_start('unserializeFromFile');
-test_step(($count = $chash->unserializeFromFile(FREEZEPATH)) < 0 ? $count : 0);
+test_step(($count = $chash->unserializeFromFile(SERIALIZEPATH)) < 0 ? $count : 0);
 test_end('continuum count is ' . $count);
 
 test_start('file serialize coherency');

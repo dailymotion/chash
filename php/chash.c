@@ -23,8 +23,6 @@ zend_class_entry *chash_class_entry;
 static zend_class_entry *chash_memory_exception,
                         *chash_io_exception,
                         *chash_invalid_parameter_exception,
-                        *chash_already_frozen_exception,
-                        *chash_not_frozen_exception,
                         *chash_not_found_exception;
 
 static int chash_return(chash_object *instance, int status)
@@ -43,14 +41,6 @@ static int chash_return(chash_object *instance, int status)
 
             case CHASH_ERROR_INVALID_PARAMETER:
                  zend_throw_exception(chash_invalid_parameter_exception, "Invalid parameter", CHASH_ERROR_INVALID_PARAMETER);
-                 break;
-
-            case CHASH_ERROR_ALREADY_FROZEN:
-                 zend_throw_exception(chash_already_frozen_exception, "Context already frozen", CHASH_ERROR_ALREADY_FROZEN);
-                 break;
-
-            case CHASH_ERROR_NOT_FROZEN:
-                 zend_throw_exception(chash_not_frozen_exception, "Context not frozen", CHASH_ERROR_NOT_FROZEN);
                  break;
 
             case CHASH_ERROR_NOT_FOUND:
@@ -150,20 +140,6 @@ PHP_METHOD(CHash, getTargetsCount)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))))
-}
-
-// CHash method freeze() -> long
-PHP_METHOD(CHash, freeze)
-{
-    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_return(instance, chash_freeze(&(instance->context))))
-}
-
-// CHash method unfreeze() -> long
-PHP_METHOD(CHash, unfreeze)
-{
-    chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    RETURN_LONG(chash_return(instance, chash_unfreeze(&(instance->context))))
 }
 
 // CHash method serialize() -> string
@@ -279,8 +255,6 @@ static zend_function_entry chash_class_methods[] =
     PHP_ME(CHash, setTargets, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, clearTargets, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, getTargetsCount, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(CHash, freeze, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(CHash, unfreeze, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, serialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, unserialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(CHash, serializeToFile, NULL, ZEND_ACC_PUBLIC)
@@ -328,8 +302,6 @@ PHP_MINIT_FUNCTION(chash)
     REGISTER_LONG_CONSTANT("CHASH_ERROR_MEMORY", CHASH_ERROR_MEMORY, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_IO", CHASH_ERROR_IO, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_INVALID_PARAMETER", CHASH_ERROR_INVALID_PARAMETER, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("CHASH_ERROR_ALREADY_FROZEN", CHASH_ERROR_ALREADY_FROZEN, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FROZEN", CHASH_ERROR_NOT_FROZEN, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FOUND", CHASH_ERROR_NOT_FOUND, CONST_CS | CONST_PERSISTENT);
 
     INIT_CLASS_ENTRY(class_entry, "CHashMemoryException", NULL);
@@ -338,10 +310,6 @@ PHP_MINIT_FUNCTION(chash)
     chash_io_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
     INIT_CLASS_ENTRY(class_entry, "CHashInvalidParameterException", NULL);
     chash_invalid_parameter_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
-    INIT_CLASS_ENTRY(class_entry, "CHashAlreadyFrozenException", NULL);
-    chash_already_frozen_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
-    INIT_CLASS_ENTRY(class_entry, "CHashNotFrozenException", NULL);
-    chash_not_frozen_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
     INIT_CLASS_ENTRY(class_entry, "CHashNotFoundException", NULL);
     chash_not_found_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
 
