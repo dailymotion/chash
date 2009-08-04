@@ -11,6 +11,15 @@ class TestCHash(unittest.TestCase):
         self.failUnlessEqual(c.add_target("192.168.0.1"), None)
         self.failUnlessEqual(c.count_targets(), 1)
 
+    def test_set_targets(self):
+        c = chash.CHash()
+        self.failUnlessEqual(c.set_targets({"192.168.0.1" : 2, "192.168.0.2" : 2, "192.168.0.3" : 2,} ), 3)
+        self.failUnlessEqual(c.count_targets(), 3)
+
+        self.failUnlessRaises(TypeError, c.set_targets, "9")
+
+        self.failUnlessRaises(TypeError, c.set_targets, {3 : 2, "192.168.0.2" : 2, "192.168.0.3" : 2,})
+
     def test_clear_targets(self):
         c = chash.CHash()
         c.add_target("192.168.0.1")

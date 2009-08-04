@@ -39,24 +39,24 @@ chash_return(int status, int zero_is_none)
     return NULL;
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static void
 chash_dealloc(CHashObject* self)
 {
   chash_terminate(&(self->context), 0);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static void
 chash_init(CHashObject* self, PyObject* args, PyObject* kwds)
 {
   chash_initialize(&(self->context), 0);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_add_target(PyObject *pyself, PyObject *args)
 {
@@ -70,8 +70,55 @@ do_add_target(PyObject *pyself, PyObject *args)
   return chash_return(chash_add_target(&(self->context), target, weight), 1);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
+static PyObject *
+do_set_targets(PyObject *pyself, PyObject *args)
+{
+  CHashObject*	self = (CHashObject*)pyself;
+  PyObject*     status;
+  PyObject*     dict = 0;
+  int           i;
+
+  if (!PyArg_ParseTuple(args, "O", &dict) || !PyDict_Check(dict))
+    {
+      PyErr_BadArgument();
+      return NULL;
+    }
+
+  PyObject * key_list = PyDict_Keys(dict);
+  int list_size = PyList_Size(key_list);
+
+  for(i=0; i<list_size; i++)
+    {
+      PyObject * pystring = 0;
+      pystring = PyList_GetItem(key_list, i);
+
+      if(!PyString_Check(pystring))
+	{
+	  PyErr_BadArgument();
+	  return NULL;
+	}
+
+      char * target = PyString_AsString(pystring);
+
+      //Get the value for the key
+      PyObject *pydub = 0;
+      pydub = PyDict_GetItem(dict, pystring);
+      u_int32_t weight = PyLong_AsLong(pydub);
+
+      if ((status = chash_return(chash_add_target(&(self->context), target, weight), 0)) < 0)
+	{
+	  return status;
+	}
+    }
+
+  return chash_return(chash_targets_count(&(self->context)), 0);
+}
+
+
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_remove_target(PyObject *pyself, PyObject *args)
 {
@@ -84,8 +131,8 @@ do_remove_target(PyObject *pyself, PyObject *args)
   return  chash_return(chash_remove_target(&(self->context), target), 1);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_count_targets(PyObject *pyself, PyObject *args)
 {
@@ -94,8 +141,8 @@ do_count_targets(PyObject *pyself, PyObject *args)
   return chash_return(chash_targets_count(&(self->context)), 0);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_clear_targets(PyObject *pyself, PyObject *args)
 {
@@ -104,8 +151,8 @@ do_clear_targets(PyObject *pyself, PyObject *args)
   return chash_return(chash_clear_targets(&(self->context)), 1);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_serialize(PyObject *pyself, PyObject *args)
 {
@@ -129,8 +176,8 @@ do_serialize(PyObject *pyself, PyObject *args)
   return retval;
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_unserialize(PyObject *pyself, PyObject *args)
 {
@@ -144,8 +191,8 @@ do_unserialize(PyObject *pyself, PyObject *args)
   return chash_return(chash_unserialize(&(self->context), serialized, length), 1);
 }
 
-//----------------------------------------------------------------------------------------                                                                                                                                       
-//                                                                                                                                                                                                                               
+//----------------------------------------------------------------------------------------
+//
 static PyObject *
 do_serialize_to_file(PyObject *pyself, PyObject *args)
 {
@@ -227,6 +274,10 @@ static PyMethodDef chash_methods[] = {
     {
       "add_target",  do_add_target, METH_VARARGS, 
       "add_target(target, weight=1) -- FIXME"
+    },
+    {
+      "set_targets",  do_set_targets, METH_VARARGS, 
+      "set_targets({target: weight}) -- FIXME"
     },
     {
       "remove_target",  do_remove_target, METH_VARARGS, 
