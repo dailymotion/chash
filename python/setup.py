@@ -8,7 +8,7 @@ module = Extension('chash',
                    )
 
 setup (name = 'CHash',
-       version = '1.0',
+       version = '1.0.0',
        author = 'Sebastien Estienne',
        author_email = 'sebastien.estienne@dailymotion.com',
        description = 'Consistent hashing library Python extension',

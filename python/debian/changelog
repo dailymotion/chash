@@ -1,0 +1,5 @@
+python-chash (1.0.0) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Sebastien Estienne <sebastien.estienne@dailymotion.com>  Wed, 12 Aug 2009 19:04:36 +0200
