@@ -5,7 +5,7 @@ Maintainer: Pierre-Yves Kerembellec <pyke@dailymotion.com>
 Standards-Version: 3.7.2
 Build-Depends: debhelper (>= 5)
 
-Package: libchash1.0.0
+Package: libchash1
 Section: libs
 Architecture: any
 Priority: optional
@@ -15,5 +15,5 @@ Package: libchash-dev
 Section: libdevel
 Architecture: any
 Priority: optional
-Depends: libchash1.0.0
+Depends: libchash1
 Description: CHash development libraries and files

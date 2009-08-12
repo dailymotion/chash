@@ -2,10 +2,10 @@ Source: python-chash
 Section: python
 Priority: extra
 Maintainer: Sebastien Estienne <sebastien.estienne@dailymotion.com>
-Build-Depends: debhelper (>= 7), python-all-dev (>= 2.5), python-support (>= 0.3), cdbs (>= 0.4.49)
+Build-Depends: debhelper (>= 7), python-all-dev (>= 2.5), python-support (>= 0.3), cdbs (>= 0.4.49), libchash-dev
 Standards-Version: 3.7.2
 
 Package: python-chash
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, python (>=2.5)
+Depends: ${shlibs:Depends}, ${misc:Depends}, python (>=2.5), libchash1
 Description: CHash Python extension

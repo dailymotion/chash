@@ -25,7 +25,7 @@ binary-arch: build install
 	dh_testroot
 	dh_installinit
 	dh_fixperms
-	install -D -m 644 libchash.so.1.0.0 debian/libchash1.0.0/usr/lib/libchash.so.1.0.0
+	install -D -m 644 libchash.so.1.0.0 debian/libchash1/usr/lib/libchash.so.1.0.0
 	install -D -m 644 libchash.a debian/libchash-dev/usr/lib/libchash.a
 	install -D -m 644 libchash.h debian/libchash-dev/usr/include/libchash.h
 	dh_installdeb

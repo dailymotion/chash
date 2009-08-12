@@ -2,9 +2,9 @@ from distutils.core import setup, Extension
 
 module = Extension('chash', 
                    sources = ['chash.c'],
-                   include_dirs = ['../library'],
+#                   include_dirs = ['../library'],
                    libraries = ['chash'],
-                   library_dirs = ['../library'],
+#                   library_dirs = ['../library'],
                    )
 
 setup (name = 'CHash',
