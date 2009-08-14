@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <sys/time.h>
-#include "libchash.h"
+#include "chash.h"
 
 // Defines
 #define TARGETS       (100)

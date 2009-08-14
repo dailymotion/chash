@@ -3,17 +3,18 @@ Section: libs
 Priority: optional
 Maintainer: Pierre-Yves Kerembellec <pyke@dailymotion.com>
 Standards-Version: 3.7.2
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 5), cdbs, autotools-dev
 
 Package: libchash1
 Section: libs
 Architecture: any
 Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: CHash shared libraries
 
 Package: libchash-dev
 Section: libdevel
 Architecture: any
 Priority: optional
-Depends: libchash1
+Depends: libchash1 (= ${Source-Version}), ${misc:Depends}
 Description: CHash development libraries and files

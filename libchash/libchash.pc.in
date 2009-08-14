@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libchash
+Description: Constant Hashing Library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lchash
+Cflags: -I${includedir}

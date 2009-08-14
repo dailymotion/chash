@@ -6,7 +6,7 @@
 #endif
 #include "php.h"
 #include "zend_exceptions.h"
-#include "libchash.h"
+#include "chash.h"
 
 // CHash composite object definition
 typedef struct

@@ -2,7 +2,7 @@ PHP_ARG_ENABLE(chash, whether to enable consistent hash extension support,
 [  --enable-chash          Enable consistent hash extension support])
 
 if test "$PHP_CHASH" != "no"; then
-  if ! test -f /usr/include/libchash.h; then
+  if ! test -f /usr/include/chash.h; then
     AC_MSG_ERROR([The libchash-dev package is not installed])
   fi
 

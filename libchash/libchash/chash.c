@@ -10,7 +10,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "libchash.h"
+#include "chash.h"
 
 // Private defines
 #define CHASH_MAGIC     (0x48414843)

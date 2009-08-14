@@ -1,5 +1,5 @@
 #include <Python.h>
-#include "libchash.h"
+#include "chash.h"
 
 /*** Types ***/
 
