@@ -1,4 +1,3 @@
-#!/usr/bin/php
 <?php
 // Defines
 define('TARGETS',       100);
@@ -63,8 +62,6 @@ function test_end($message)
     print ")\n";
 }
 
-// Load extension and create CHash instance
-dl('chash.so');
 $chash = new CHash();
 $chash->useExceptions(false);
 
