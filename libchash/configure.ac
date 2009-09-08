@@ -1,4 +1,4 @@
-AC_PREREQ(2.62)
+AC_PREREQ(2.59)
 AC_INIT([libchash],[1.0],[pyke (at) dailymotion (dot) com])
 AC_CONFIG_SRCDIR([libchash/chash.c])
 AC_CONFIG_HEADERS([config.h])
