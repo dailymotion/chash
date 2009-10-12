@@ -1,13 +1,13 @@
-#!/bin/bash
+#! /bin/sh -e
 
-set -e
+if test "$1" = "purge"; then
+    if which ucf >/dev/null 2>&1; then
+        ucf --purge /etc/php5/conf.d/chash.ini
+    fi
+    rm -f /etc/php5/conf.d/chash.ini
+fi
 
 #DEBHELPER#
 
-if [ "$1" != "remove" -a "$1" != "purge" ]; then
-	exit 0
-fi
-
-rm /etc/php5/conf.d/chash.ini
-
 exit 0
+

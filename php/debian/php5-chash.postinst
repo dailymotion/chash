@@ -1,0 +1,9 @@
+#! /bin/sh -e
+
+if test "$1" = "configure"; then
+    ucf /usr/share/php5-chash/chash.ini-dist /etc/php5/conf.d/chash.ini
+fi
+
+#DEBHELPER#
+
+exit 0

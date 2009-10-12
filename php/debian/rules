@@ -25,8 +25,9 @@ binary-arch: build install
 	dh_testroot
 	dh_installinit
 	dh_fixperms
-	install -D -m 644 modules/chash.so debian/php5-chash`php-config --extension-dir`/chash.so
-	install -D -m 644 debian/chash.ini debian/php5-chash/etc/php5/conf.d/chash.ini
+	install -D -m 644 $(CURDIR)/modules/chash.so $(CURDIR)/debian/php5-chash$(shell /usr/bin/php-config --extension-dir)/chash.so
+	mkdir -p $(CURDIR)/debian/php5-chash/usr/share/php5-chash/
+	echo "extension=chash.so" > $(CURDIR)/debian/php5-chash/usr/share/php5-chash/chash.ini-dist
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
