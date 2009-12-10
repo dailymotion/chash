@@ -196,8 +196,7 @@ int chash_add_target(CHASH_CONTEXT *context, const char *target, u_char weight)
     {
         return status;
     }
-    weight = weight < 1 ? 1 : weight;
-    weight = weight > 10 ? 10 : weight;
+    weight = weight > 100 ? 100 : weight;
     if (context->targets)
     {
         for (index = 0; index < context->targets_count; index ++)

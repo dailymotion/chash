@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     for (index = 1; index <= TARGETS; index ++)
     {
         sprintf(buffer, "target%03d", index);
-        test_step(chash_add_target(&context, buffer, 1), NULL);
+        test_step(chash_add_target(&context, buffer, 50), NULL);
     }
     test_step(chash_targets_count(&context) == TARGETS ? 0 : -1, "invalid targets count %d", chash_targets_count(&context));
     test_end("added %d targets", chash_targets_count(&context));
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     for (index = 1; index <= TARGETS; index ++)
     {
         sprintf(buffer, "target%03d", index);
-        chash_add_target(&context, buffer, 1);
+        chash_add_target(&context, buffer, 50);
     }
 
     test_start("serialize");

@@ -1,3 +1,9 @@
+chash (1.0.1) stable; urgency=low
+
+  * Change target minimum weight to 0 (was 1) and maximum weight to 100 (was 10) (beware of continuum computation time and size!)
+
+ -- Pierre-Yves Kerembellec <pyke@dailymotion.com>  Thu, 10 Dec 2009 10:37:45 +0200
+
 chash (1.0.0) stable; urgency=low
 
   * CHash libraries packages
