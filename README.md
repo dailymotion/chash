@@ -213,9 +213,9 @@ Clear all targets from the given context.
 #### Description
 Return the number of targets in the given context.
 
-
 #### Parameters
 * *context*: pointer to an initialized context
+
 #### Return value
 * *n*: when successful, number of targets
 * *CHASH_ERROR_INVALID_PARAMETER*: an invalid parameter was passed to the function
@@ -261,6 +261,7 @@ Serialize the given context state into a file (the context state can be restored
 #### Parameters
 * *context*: pointer to an initialized context
 * *path*: path of the file to which the context state will be saved
+
 #### Return value
 * *n*: when successful, size in bytes of the serialized data
 * *CHASH_ERROR_INVALID_PARAMETER*: an invalid parameter was passed to the function
