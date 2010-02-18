@@ -34,7 +34,7 @@ else
     mkdir -p common
     touch config.rpath
 
-    test "x$LIBTOOLIZE" = "x" && LIBTOOLIZE=libtoolize
+    test "x$LIBTOOLIZE" = "x" && LIBTOOLIZE=$(which libtoolize glibtoolize|head -1)
 
     "$LIBTOOLIZE" -c --force
     run_versioned aclocal "$VERSION"
