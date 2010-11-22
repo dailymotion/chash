@@ -2,7 +2,7 @@
 # pyke@dailymotion.com - 05/2009
 
 test: modules/chash.so
-	php -c php_chash.ini -f chash_test.php
+	php -n -c php_chash.ini -f chash_test.php
 
 modules/chash.so: Makefile chash.c
 	make -f Makefile install

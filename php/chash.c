@@ -71,8 +71,9 @@ PHP_METHOD(CHash, useExceptions)
 PHP_METHOD(CHash, addTarget)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    u_int32_t    weight = 1, length;
     char         *target;
+    int          length;
+    long         weight = 1;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &target, &length, &weight) != SUCCESS || length == 0)
     {
@@ -85,8 +86,8 @@ PHP_METHOD(CHash, addTarget)
 PHP_METHOD(CHash, removeTarget)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    u_int32_t    length;
     char         *target;
+    int          length;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &target, &length) != SUCCESS || length == 0)
     {
@@ -101,10 +102,10 @@ PHP_METHOD(CHash, setTargets)
     HashPosition position;
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     zval         *targets, **weight;
-    uint         length;
-    ulong        unused;
-    int          status;
     char         *target;
+    ulong        unused;
+    uint         length;
+    int          status;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &targets) != SUCCESS)
     {
@@ -162,8 +163,8 @@ PHP_METHOD(CHash, serialize)
 PHP_METHOD(CHash, unserialize)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    uint         length;
     u_char       *serialized;
+    int          length;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &serialized, &length) != SUCCESS || length == 0)
     {
@@ -176,8 +177,8 @@ PHP_METHOD(CHash, unserialize)
 PHP_METHOD(CHash, serializeToFile)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    uint         length;
     char         *path;
+    int          length;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
     {
@@ -190,8 +191,8 @@ PHP_METHOD(CHash, serializeToFile)
 PHP_METHOD(CHash, unserializeFromFile)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    uint         length;
     char         *path;
+    int          length;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &path, &length) != SUCCESS || length == 0)
     {
@@ -204,12 +205,13 @@ PHP_METHOD(CHash, unserializeFromFile)
 PHP_METHOD(CHash, lookupList)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    uint         count = 1, length, index;
-    int          status;
     char         *candidate, **targets;
+    int          length, index, status;
+    long         count = 1;
+
 
     array_init(return_value);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0 || count < 1)
     {
         chash_return(instance, CHASH_ERROR_INVALID_PARAMETER);
         return;
@@ -229,11 +231,11 @@ PHP_METHOD(CHash, lookupList)
 PHP_METHOD(CHash, lookupBalance)
 {
     chash_object *instance = (chash_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-    uint         count = 1, length;
-    int          status;
     char         *candidate, *target;
+    int          length, status;
+    long         count = 1;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &candidate, &length, &count) != SUCCESS || length == 0 || count < 1)
     {
         chash_return(instance, CHASH_ERROR_INVALID_PARAMETER);
         RETURN_STRING("", 1)
