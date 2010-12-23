@@ -1,3 +1,9 @@
+python-chash (1.0.1) UNRELEASED; urgency=low
+
+  * Fix crash on 64bit systems
+
+ -- Sebastien Estienne <sebastien.estienne@dailymotion.com>  Thu, 23 Dec 2010 17:22:52 +0100
+
 python-chash (1.0.0) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #XXXXXX)

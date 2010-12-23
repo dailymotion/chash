@@ -62,7 +62,7 @@ do_add_target(PyObject *pyself, PyObject *args)
 {
   const char*	target;
   CHashObject*	self = (CHashObject*)pyself;
-  u_int32_t	weight = 1;
+  long	        weight = 1;
 
   if (!PyArg_ParseTuple(args, "s|l", &target, &weight))
     return NULL;
@@ -226,7 +226,7 @@ do_lookup_list(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
   char*        candidate;
-  uint         count = 1;
+  long         count = 1;
   int          status;
   uint         index;
   char**       targets;
@@ -254,9 +254,9 @@ do_lookup_balance(PyObject *pyself, PyObject *args)
 {
   CHashObject* self = (CHashObject*)pyself;
   char*        candidate;
-  uint         count = 1;
   int          status;
   char*        target;
+  long         count = 1;
 
   if (!PyArg_ParseTuple(args, "s|l", &candidate, &count))
     return NULL;
