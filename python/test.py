@@ -4,6 +4,9 @@ import unittest
 import chash
 import os
 
+from hashlib import md5
+
+
 class TestCHash(unittest.TestCase):
 
     def test_add_target(self):
@@ -93,6 +96,9 @@ class TestCHash(unittest.TestCase):
         c.add_target("192.168.0.4")
         cs = c.serialize()
 
+        self.assertEqual(len(cs), 3138)
+        self.assertEqual(md5(cs).hexdigest(), '975639a999ade73bd4fc64f3486ea093')
+
         c2 = chash.CHash()
         c2.unserialize(cs)
         self.failUnlessEqual(c2.count_targets(), 4)
@@ -142,6 +148,7 @@ class TestCHash(unittest.TestCase):
         c.add_target("192.168.0.2")
         c.add_target("192.168.0.1")
         self.failUnlessEqual(c.lookup_balance("9"), "192.168.0.1")
+
 
 if __name__ == '__main__':
     unittest.main()
