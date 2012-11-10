@@ -1,6 +1,9 @@
 // Consistent hashing library
 // pyke@dailymotion.com - 05/2009
 
+#ifndef __CHASH_INCLUDE
+#define __CHASH_INCLUDE
+
 // Mandatory includes
 #include <sys/types.h>
 
@@ -55,3 +58,5 @@ int chash_file_serialize(CHASH_CONTEXT *, const char *);
 int chash_file_unserialize(CHASH_CONTEXT *, const char *);
 int chash_lookup(CHASH_CONTEXT *, const char *, u_int16_t, char ***);
 int chash_lookup_balance(CHASH_CONTEXT *, const char *, u_int16_t, char **);
+
+#endif
