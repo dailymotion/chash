@@ -16,7 +16,7 @@
 #define CHASH_ERROR_NOT_INITIALIZED      (-12)
 #define CHASH_ERROR_NOT_FOUND            (-13)
 
-#pragma pack(1)
+#pragma pack(push, 1)
 
 typedef struct
 {
@@ -44,6 +44,8 @@ typedef struct
     CHASH_LOOKUP *lookups;
     char         **lookup;
 } CHASH_CONTEXT;
+
+#pragma pack(pop)
 
 // Public API
 int chash_initialize(CHASH_CONTEXT *, u_char);
