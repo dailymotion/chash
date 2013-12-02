@@ -1,3 +1,15 @@
+python-chash (1.0.1-3~precise1) precise-dc; urgency=low
+
+  * Precise repository
+
+ -- Sebastien Estienne <sebastien.estienne@gmail.com>  Mon, 02 Dec 2013 15:53:14 +0100
+
+python-chash (1.0.1-2~karmic1) karmic-dc; urgency=low
+
+  * Cloud repository
+
+ -- Sebastien Estienne <sebastien.estienne@gmail.com>  Thu, 24 Feb 2011 15:31:51 +0100
+
 python-chash (1.0.1) UNRELEASED; urgency=low
 
   * Fix crash on 64bit systems

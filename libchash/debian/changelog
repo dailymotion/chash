@@ -1,3 +1,9 @@
+chash (1.0.1-2~karmic1) karmic-dc; urgency=low
+
+  * Cloud repository
+
+ -- Sebastien Estienne <sebastien.estienne@gmail.com>  Thu, 24 Feb 2011 15:26:55 +0100
+
 chash (1.0.1) stable; urgency=low
 
   * Change target minimum weight to 0 (was 1) and maximum weight to 100 (was 10) (beware of continuum computation time and size!)

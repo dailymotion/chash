@@ -1,15 +1,21 @@
-from distutils.core import setup, Extension
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-module = Extension('chash', 
-                   sources = ['chash.c'],
-#                   include_dirs = ['../library'],
-                   libraries = ['chash'],
-#                   library_dirs = ['../library'],
-                   )
+from setuptools import setup, Extension
+import commands
 
-setup (name = 'CHash',
-       version = '1.0.0',
-       author = 'Sebastien Estienne',
-       author_email = 'sebastien.estienne@dailymotion.com',
-       description = 'Consistent hashing library Python extension',
-       ext_modules = [module])
+chash_ext = Extension(
+    name = 'chash',
+    sources = ['chash.c'],
+    libraries = ['chash']
+)
+
+setup (
+    name = 'CHash',
+    version = '1.0.1',
+    description = 'Consistent hashing library Python extension',
+    author = 'Sebastien Estienne',
+    author_email = 'sebastien.estienne@dailymotion.com',
+    ext_modules = [chash_ext],
+    zip_safe=False
+)
