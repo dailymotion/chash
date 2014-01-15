@@ -85,7 +85,7 @@ A very basic example is provided below:
 
     int main()
     {
-        CHASH_CONTEXT context;
+        CHASH_CONTEXT context = {0};
         char          *target;
 
         chash_initialize(&context, 0);
