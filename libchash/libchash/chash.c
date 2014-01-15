@@ -445,18 +445,19 @@ int chash_lookup(CHASH_CONTEXT *context, const char *candidate, u_int16_t count,
     {
         return CHASH_ERROR_INVALID_PARAMETER;
     }
-    if ((status = chash_freeze(context)) < 0)
+    if (!context->frozen && (status = chash_freeze(context)) < 0)
     {
         return status;
     }
-    if (! (context->lookups = (CHASH_LOOKUP *)realloc(context->lookups, context->targets_count * sizeof(CHASH_LOOKUP))))
+    if (context->lookups_allocated < context->targets_count && !(context->lookups = (CHASH_LOOKUP *)realloc(context->lookups, context->targets_count * sizeof(CHASH_LOOKUP))))
     {
         return CHASH_ERROR_MEMORY;
     }
-    if (! (context->lookup = (char **)realloc(context->lookup, context->targets_count * sizeof(char *))))
+    if (context->lookups_allocated < context->targets_count && !(context->lookup = (char **)realloc(context->lookup, context->targets_count * sizeof(char *))))
     {
         return CHASH_ERROR_MEMORY;
     }
+    context->lookups_allocated = context->targets_count;
     memset(context->lookups, 0, context->targets_count * sizeof(CHASH_LOOKUP));
     memset(context->lookup, 0, context->targets_count * sizeof(char *));
     hash = chash_mmhash2(candidate, -1);
