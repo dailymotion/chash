@@ -1,21 +1,36 @@
 # Consistent hashing library PHP extension
 # pyke@dailymotion.com - 05/2009
 
-test: modules/chash.so
+test: test_php test_hhvm
+test_php: modules/chash.so
 	php -n -c php_chash.ini -f chash_test.php
 
-modules/chash.so: Makefile chash.c
-	make -f Makefile install
+test_hhvm: hhchash.so
+	hhvm -d extension_dir=. -d hhvm.extensions[]=hhchash.so chash_test.php
 
-Makefile: config.m4
+modules/chash.so: Makefile.php chash.c
+	make -f Makefile.php
+
+hhchash.so: Makefile.hhvm chash.c
+	make -f Makefile.hhvm
+
+Makefile.php: config.m4
 	phpize
 	CFLAGS="-Wall -O3" ./configure
+	mv Makefile Makefile.php
+
+Makefile.hhvm: config.cmake
+	hphpize
+	cmake .
+	mv Makefile Makefile.hhvm
 
 clean:
 
 distclean: debclean
-	make -f Makefile distclean
+	make -f Makefile.php distclean
 	phpize --clean
+	make -f Makefile.hhvm distclean
+	hphpize --clean
 
 deb:
 	debuild -i -us -uc -b
