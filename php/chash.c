@@ -293,12 +293,10 @@ zend_object_value chash_allocate(zend_class_entry *class_entry TSRMLS_DC)
     return value;
 }
 
-#ifdef HHVM
 /** {{{ function entries */
 const zend_function_entry chash_functions[] = {
     ZEND_FE_END /* Must be the last line in luasandbox_functions[] */
 };
-#endif
 
 // CHash module global initialization
 PHP_MINIT_FUNCTION(chash)
