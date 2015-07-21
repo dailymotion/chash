@@ -4,14 +4,14 @@ build: build-stamp
 
 build-stamp:
 	dh_testdir
-	$(MAKE) -f Makefile.chash
+	$(MAKE)
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp
-	$(MAKE) -f Makefile.chash clean
+	$(MAKE) clean
 	dh_clean
 
 install: build
@@ -28,6 +28,7 @@ binary-arch: build install
 	install -D -m 644 $(CURDIR)/modules/chash.so $(CURDIR)/debian/php5-chash$(shell /usr/bin/php-config --extension-dir)/chash.so
 	mkdir -p $(CURDIR)/debian/php5-chash/usr/share/php5-chash/
 	echo "extension=chash.so" > $(CURDIR)/debian/php5-chash/usr/share/php5-chash/chash.ini-dist
+	make -f Makefile.hhvm install DESTDIR=$(CURDIR)/debian/hhvm-chash
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums

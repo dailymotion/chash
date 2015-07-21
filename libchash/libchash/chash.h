@@ -4,6 +4,10 @@
 #ifndef __CHASH_INCLUDE
 #define __CHASH_INCLUDE
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 // Mandatory includes
 #include <sys/types.h>
 
@@ -60,5 +64,9 @@ int chash_file_serialize(CHASH_CONTEXT *, const char *);
 int chash_file_unserialize(CHASH_CONTEXT *, const char *);
 int chash_lookup(CHASH_CONTEXT *, const char *, u_int16_t, char ***);
 int chash_lookup_balance(CHASH_CONTEXT *, const char *, u_int16_t, char **);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

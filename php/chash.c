@@ -25,30 +25,32 @@ static zend_class_entry *chash_memory_exception,
                         *chash_invalid_parameter_exception,
                         *chash_not_found_exception;
 
-static int chash_return(chash_object *instance, int status)
+#define chash_return(instance, status) (_chash_return(instance, status TSRMLS_CC))
+
+static int _chash_return(chash_object *instance, int status TSRMLS_DC)
 {
     if (status < 0 && instance->use_exceptions)
     {
         switch (status)
         {
             case CHASH_ERROR_MEMORY:
-                 zend_throw_exception(chash_memory_exception, "Memory allocation error", CHASH_ERROR_MEMORY);
+                 zend_throw_exception(chash_memory_exception, "Memory allocation error", CHASH_ERROR_MEMORY TSRMLS_CC);
                  break;
 
             case CHASH_ERROR_IO:
-                 zend_throw_exception(chash_io_exception, "File I/O error", CHASH_ERROR_IO);
+                 zend_throw_exception(chash_io_exception, "File I/O error", CHASH_ERROR_IO TSRMLS_CC);
                  break;
 
             case CHASH_ERROR_INVALID_PARAMETER:
-                 zend_throw_exception(chash_invalid_parameter_exception, "Invalid parameter", CHASH_ERROR_INVALID_PARAMETER);
+                 zend_throw_exception(chash_invalid_parameter_exception, "Invalid parameter", CHASH_ERROR_INVALID_PARAMETER TSRMLS_CC);
                  break;
 
             case CHASH_ERROR_NOT_FOUND:
-                 zend_throw_exception(chash_not_found_exception, "No element found", CHASH_ERROR_NOT_FOUND);
+                 zend_throw_exception(chash_not_found_exception, "No element found", CHASH_ERROR_NOT_FOUND TSRMLS_CC);
                  break;
 
             default:
-                 zend_throw_exception(NULL, "Unknown CHash exception", 0);
+                 zend_throw_exception(NULL, "Unknown CHash exception", 0 TSRMLS_CC);
         }
     }
     return status;
@@ -281,7 +283,7 @@ zend_object_value chash_allocate(zend_class_entry *class_entry TSRMLS_DC)
     zend_object_value value;
     chash_object      *instance;
 
-    instance = ecalloc(1, sizeof(chash_object));
+    instance = (chash_object *) ecalloc(1, sizeof(chash_object));
     zend_object_std_init(&(instance->zo), class_entry TSRMLS_CC);
     chash_initialize(&(instance->context), 0);
     instance->use_exceptions = 1;
@@ -290,6 +292,13 @@ zend_object_value chash_allocate(zend_class_entry *class_entry TSRMLS_DC)
     value.handlers = zend_get_std_object_handlers();
     return value;
 }
+
+#ifdef HHVM
+/** {{{ function entries */
+const zend_function_entry chash_functions[] = {
+    ZEND_FE_END /* Must be the last line in luasandbox_functions[] */
+};
+#endif
 
 // CHash module global initialization
 PHP_MINIT_FUNCTION(chash)
@@ -307,13 +316,13 @@ PHP_MINIT_FUNCTION(chash)
     REGISTER_LONG_CONSTANT("CHASH_ERROR_NOT_FOUND", CHASH_ERROR_NOT_FOUND, CONST_CS | CONST_PERSISTENT);
 
     INIT_CLASS_ENTRY(class_entry, "CHashMemoryException", NULL);
-    chash_memory_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    chash_memory_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
     INIT_CLASS_ENTRY(class_entry, "CHashIOException", NULL);
-    chash_io_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    chash_io_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
     INIT_CLASS_ENTRY(class_entry, "CHashInvalidParameterException", NULL);
-    chash_invalid_parameter_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    chash_invalid_parameter_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
     INIT_CLASS_ENTRY(class_entry, "CHashNotFoundException", NULL);
-    chash_not_found_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(), NULL);
+    chash_not_found_exception = zend_register_internal_class_ex(&class_entry, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
 
     return SUCCESS;
 }
@@ -323,7 +332,7 @@ zend_module_entry chash_module_entry =
 {
     STANDARD_MODULE_HEADER,
     "chash",
-    NULL,
+    chash_functions,
     PHP_MINIT(chash),
     NULL,
     NULL,
@@ -332,6 +341,7 @@ zend_module_entry chash_module_entry =
     "1.0",
     STANDARD_MODULE_PROPERTIES
 };
-#ifdef COMPILE_DL_CHASH
+
+#if defined(COMPILE_DL_CHASH) || defined(HHVM)
 ZEND_GET_MODULE(chash)
 #endif
