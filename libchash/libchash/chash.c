@@ -56,10 +56,11 @@ static u_int32_t chash_mmhash2(const void *key, int key_size)
 }
 
 // Compute continuum and block future modifications
-static int chash_sort32(const void *element1, const void *element2)
-{
-    return (*(u_int32_t *)element1 > *(u_int32_t *)element2) ? 1 : -1;
-}
+#define SORT_NAME sort_chash_items
+#define SORT_TYPE CHASH_ITEM
+#define SORT_CMP(x, y) (((x).hash > (y).hash) ? 1 : ((x).hash == (y).hash) ? 0 : -1)
+#include "sort.h"
+
 static int chash_freeze(CHASH_CONTEXT *context)
 {
     u_char weight, replica;
@@ -109,7 +110,7 @@ static int chash_freeze(CHASH_CONTEXT *context)
             }
         }
     }
-    qsort(context->continuum, context->items_count, sizeof(CHASH_ITEM), chash_sort32);
+    sort_chash_items_merge_sort(context->continuum, context->items_count);
     context->frozen = 1;
     return context->items_count;
 }
@@ -428,11 +429,12 @@ int chash_file_unserialize(CHASH_CONTEXT *context, const char *path)
     return status;
 }
 
+#define SORT_NAME sort_chash_lookups
+#define SORT_TYPE CHASH_LOOKUP
+#define SORT_CMP(x, y) (((x).rank > (y).rank) ? 1 : ((x).rank == (y).rank) ? 0 : -1)
+#include "sort.h"
+
 // Perform a lookup (implicit freeze)
-static int chash_sort16(const void *element1, const void *element2)
-{
-    return (*(u_int16_t *)element1 > *(u_int16_t *)element2) ? 1 : -1;
-}
 int chash_lookup(CHASH_CONTEXT *context, const char *candidate, u_int16_t count, char ***output)
 {
     u_int32_t hash, start = 0, range;
@@ -443,18 +445,19 @@ int chash_lookup(CHASH_CONTEXT *context, const char *candidate, u_int16_t count,
     {
         return CHASH_ERROR_INVALID_PARAMETER;
     }
-    if ((status = chash_freeze(context)) < 0)
+    if (!context->frozen && (status = chash_freeze(context)) < 0)
     {
         return status;
     }
-    if (! (context->lookups = (CHASH_LOOKUP *)realloc(context->lookups, context->targets_count * sizeof(CHASH_LOOKUP))))
+    if (context->lookups_allocated < context->targets_count && !(context->lookups = (CHASH_LOOKUP *)realloc(context->lookups, context->targets_count * sizeof(CHASH_LOOKUP))))
     {
         return CHASH_ERROR_MEMORY;
     }
-    if (! (context->lookup = (char **)realloc(context->lookup, context->targets_count * sizeof(char *))))
+    if (context->lookups_allocated < context->targets_count && !(context->lookup = (char **)realloc(context->lookup, context->targets_count * sizeof(char *))))
     {
         return CHASH_ERROR_MEMORY;
     }
+    context->lookups_allocated = context->targets_count;
     memset(context->lookups, 0, context->targets_count * sizeof(CHASH_LOOKUP));
     memset(context->lookup, 0, context->targets_count * sizeof(char *));
     hash = chash_mmhash2(candidate, -1);
@@ -484,7 +487,7 @@ int chash_lookup(CHASH_CONTEXT *context, const char *candidate, u_int16_t count,
         }
         start ++;
     }
-    qsort(context->lookups, context->targets_count, sizeof(CHASH_LOOKUP), chash_sort16);
+    sort_chash_lookups_merge_sort(context->lookups, context->targets_count);
     for (index = context->targets_count - count; index < context->targets_count; index ++)
     {
         context->lookup[index - (context->targets_count - count)] = context->targets[context->lookups[index].target].name;

@@ -46,6 +46,7 @@ typedef struct
     u_int32_t    items_count;
     CHASH_ITEM   *continuum;
     CHASH_LOOKUP *lookups;
+    u_int16_t    lookups_allocated;
     char         **lookup;
 } CHASH_CONTEXT;
 
