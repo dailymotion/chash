@@ -85,7 +85,7 @@ PHP_METHOD(CHash, addTarget)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|l", &target, &weight) != SUCCESS || target->len == 0)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     RETVAL_LONG(chash_return(instance, chash_add_target(&(instance->context), target->val, weight)));
 }
@@ -99,7 +99,7 @@ PHP_METHOD(CHash, removeTarget)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &target) != SUCCESS || target->len == 0)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     RETURN_LONG(chash_return(instance, chash_remove_target(&(instance->context), target->val)));
 }
@@ -117,17 +117,17 @@ PHP_METHOD(CHash, setTargets)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &targets) != SUCCESS)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     if ((status = chash_clear_targets(&(instance->context))) < 0)
     {
-        RETURN_LONG(chash_return(instance, status))
+        RETURN_LONG(chash_return(instance, status));
     }
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(targets), target, weight) {
         if (Z_TYPE_P(weight) == IS_LONG && (status = chash_add_target(&(instance->context), target->val, Z_LVAL_P(weight))) < 0)
         {
-            RETURN_LONG(chash_return(instance, status))
+            RETURN_LONG(chash_return(instance, status));
         }
     } ZEND_HASH_FOREACH_END();
     RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))));
@@ -175,7 +175,7 @@ PHP_METHOD(CHash, unserialize)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &serialized) != SUCCESS || serialized->len == 0)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     RETURN_LONG(chash_return(instance, chash_unserialize(&(instance->context), serialized->val, serialized->len)));
 }
@@ -189,7 +189,7 @@ PHP_METHOD(CHash, serializeToFile)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &path) != SUCCESS || path->len == 0)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     RETURN_LONG(chash_return(instance, chash_file_serialize(&(instance->context), path->val)));
 }
@@ -203,7 +203,7 @@ PHP_METHOD(CHash, unserializeFromFile)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &path) != SUCCESS || path->len == 0)
     {
-        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER))
+        RETURN_LONG(chash_return(instance, CHASH_ERROR_INVALID_PARAMETER));
     }
     RETURN_LONG(chash_return(instance, chash_file_unserialize(&(instance->context), path->val)));
 }
