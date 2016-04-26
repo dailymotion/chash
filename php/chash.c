@@ -17,7 +17,7 @@ typedef struct
 } chash_object;
 
 // CHash class entry
-zend_class_entry *chash_class_entry;
+zend_class_entry *chash_ce;
 
 static zend_object_handlers chash_object_handlers;
 
@@ -30,7 +30,7 @@ static zend_class_entry *chash_memory_exception,
 static inline chash_object *php_chash_fetch_object(zend_object *obj) {
     return (chash_object *)((char *)obj - XtOffsetOf(chash_object, zo));
 }
-#define Z_CHASH_OBJ_P(zv) php_chash_fetch_object(Z_OBJ_P(zv));
+#define Z_CHASH_OBJ_P(zv) php_chash_fetch_object(Z_OBJ_P(getThis()));
 
 static int chash_return(chash_object *instance, int status)
 {
@@ -64,8 +64,7 @@ static int chash_return(chash_object *instance, int status)
 // CHash method useExceptions(bool) -> bool
 PHP_METHOD(CHash, useExceptions)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     u_char       use;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "b", &use) == SUCCESS)
@@ -78,8 +77,7 @@ PHP_METHOD(CHash, useExceptions)
 // CHash method addTarget(<target>[, <weight>]) -> long
 PHP_METHOD(CHash, addTarget)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char         *target;
     size_t       length;
     long         weight = 1;
@@ -94,8 +92,7 @@ PHP_METHOD(CHash, addTarget)
 // CHash method removeTarget(<target>) -> long
 PHP_METHOD(CHash, removeTarget)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char  *target;
     size_t  length;
 
@@ -110,7 +107,7 @@ PHP_METHOD(CHash, removeTarget)
 PHP_METHOD(CHash, setTargets)
 {
     chash_object *instance;
-    instance = Z_CHASH_OBJ_P(getThis());
+    instance = Z_CHASH_OBJ_P();
     zval         *targets, *weight;
     zend_string  *target;
     ulong        unused;
@@ -129,33 +126,32 @@ PHP_METHOD(CHash, setTargets)
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(targets), target, weight) {
         if (Z_TYPE_P(weight) == IS_LONG && (status = chash_add_target(&(instance->context), target->val, Z_LVAL_P(weight))) < 0)
         {
+            zend_string_release(target);
             RETURN_LONG(chash_return(instance, status));
         }
     } ZEND_HASH_FOREACH_END();
+    zend_string_release(target);
     RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))));
 }
 
 // CHash method clearTargets() -> long
 PHP_METHOD(CHash, clearTargets)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     RETURN_LONG(chash_return(instance, chash_clear_targets(&(instance->context))));
 }
 
 // CHash method getTargetsCount() -> long
 PHP_METHOD(CHash, getTargetsCount)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     RETURN_LONG(chash_return(instance, chash_targets_count(&(instance->context))));
 }
 
 // CHash method serialize() -> string
 PHP_METHOD(CHash, serialize)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     u_char       *serialized;
     int          size;
 
@@ -171,8 +167,7 @@ PHP_METHOD(CHash, serialize)
 // CHash method unserialize(<serialized>) -> long
 PHP_METHOD(CHash, unserialize)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     u_char *serialized;
     size_t length;
 
@@ -186,8 +181,7 @@ PHP_METHOD(CHash, unserialize)
 // CHash method serializeToFile(<path>) -> long
 PHP_METHOD(CHash, serializeToFile)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char *path;
     size_t length;
 
@@ -201,8 +195,7 @@ PHP_METHOD(CHash, serializeToFile)
 // CHash method unserializeFromFile(<path>) -> long
 PHP_METHOD(CHash, unserializeFromFile)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char *path;
     size_t length;
 
@@ -216,8 +209,7 @@ PHP_METHOD(CHash, unserializeFromFile)
 // CHash method lookupList(<candidate>[, <count>]) -> array
 PHP_METHOD(CHash, lookupList)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char         *candidate, **targets;
     size_t       length;
     int          index, status;
@@ -244,8 +236,7 @@ PHP_METHOD(CHash, lookupList)
 // CHash method lookupBalance(<name>[, <count>]) -> string
 PHP_METHOD(CHash, lookupBalance)
 {
-    zval* object = getThis();
-    chash_object* instance = Z_CHASH_OBJ_P(object);
+    chash_object* instance = Z_CHASH_OBJ_P();
     char         *candidate, *target;
     size_t       length;
     int          status;
@@ -285,10 +276,12 @@ static zend_function_entry chash_class_methods[] =
 // CHash extended object destructor
 static void chash_free(zend_object *obj)
 {
-    chash_object *i_obj = (chash_object *)((char *)obj - XtOffsetOf(chash_object, zo));
+    chash_object *i_obj = php_chash_fetch_object(obj);
+    zend_object_std_dtor(&(i_obj->zo));
     chash_terminate(&(i_obj->context), 0);
     i_obj = NULL;
-    zend_object_std_dtor(&i_obj->zo);
+    obj = NULL;
+    efree(obj);
     efree(i_obj);
 }
 
@@ -296,10 +289,10 @@ static zend_object *chash_allocate(zend_class_entry *ce)
 {
     chash_object *instance = ecalloc(1, sizeof(chash_object));
 
-    zend_object_std_init(&instance->zo, ce);
+    zend_object_std_init(&(instance->zo), ce);
     chash_initialize(&(instance->context), 0);
     instance->use_exceptions = 1;
-    instance->zo.handlers = zend_get_std_object_handlers();
+    instance->zo.handlers = &chash_object_handlers;
 
     return &instance->zo;
 }
@@ -310,13 +303,15 @@ PHP_MINIT_FUNCTION(chash)
     zend_class_entry ce;
 
     memcpy(&chash_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+
+    INIT_CLASS_ENTRY(ce, "CHash", chash_class_methods);
+    ce.create_object = chash_allocate;
+
     chash_object_handlers.offset = XtOffsetOf(chash_object, zo);
     chash_object_handlers.clone_obj = NULL;
     chash_object_handlers.free_obj = chash_free;
 
-    INIT_CLASS_ENTRY(ce, "CHash", chash_class_methods);
-    chash_class_entry = zend_register_internal_class(&ce);
-    chash_class_entry->create_object = chash_allocate;
+    chash_ce = zend_register_internal_class(&ce);
 
     REGISTER_LONG_CONSTANT("CHASH_ERROR_DONE", CHASH_ERROR_DONE, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("CHASH_ERROR_MEMORY", CHASH_ERROR_MEMORY, CONST_CS | CONST_PERSISTENT);
