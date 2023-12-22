@@ -16,5 +16,5 @@ Package: libchash-dev
 Section: libdevel
 Architecture: any
 Priority: optional
-Depends: libchash1 (= ${Source-Version}), ${misc:Depends}
+Depends: libchash1 (= ${source:Version}), ${misc:Depends}
 Description: CHash development libraries and files
