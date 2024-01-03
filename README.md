@@ -86,7 +86,7 @@ A very basic example is provided below:
 
     int main()
     {
-        CHASH_CONTEXT context;
+        CHASH_CONTEXT context = {0};
         char          *target;
 
         chash_initialize(&context, 0);
@@ -135,7 +135,7 @@ The requested data cannot be found.
 Functions list
 --------------
 
-### int chash_initialize(CHASH_CONTEXT *context, u_char *force)
+### int chash_initialize(CHASH_CONTEXT \*context, u_char \*force)
 
 #### Description
 Initialize the given context for future use. This function *MUST* be called before using the context
@@ -151,7 +151,7 @@ with other library functions (a *CHASH_ERROR_NOT_INITIALIZED* error will be retu
 * *CHASH_ERROR_ALREADY_INITIALIZED*: the context was previously initialized and the *force* parameter
   is 0 (use *chash_terminate()* first)|
 
-### int chash_terminate(CHASH_CONTEXT *context, u_char force)
+### int chash_terminate(CHASH_CONTEXT \*context, u_char force)
 
 #### Description
 Release the given context (freeing allocated memory as needed). This function *MUST* be called when the context is no longer used (memory leaks may occur otherwise).
@@ -165,7 +165,7 @@ Release the given context (freeing allocated memory as needed). This function *M
 * *CHASH_ERROR_INVALID_PARAMETER*: an invalid parameter was passed to the function
 * *CHASH_ERROR_NOT_INITIALIZED*: the context was not previously initialized and the *force* parameter is 0 (use *chash_initialize()* first)
 
-### int chash_add_target(CHASH_CONTEXT *context, const char *name, u_char weight)
+### int chash_add_target(CHASH_CONTEXT \*context, const char \*name, u_char weight)
 
 #### Description
 Add a new target to the given context. If the target already exists, its weight is updated according to the *weight* parameter.
@@ -181,7 +181,7 @@ Add a new target to the given context. If the target already exists, its weight 
 * *CHASH_ERROR_NOT_INITIALIZED*: the context was not initialized (use *chash_initialize()* first)
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 
-### int chash_remove_target(CHASH_CONTEXT *context, const char *name)
+### int chash_remove_target(CHASH_CONTEXT \*context, const char \*name)
 
 #### Description
 Remove a target from the given context.
@@ -196,7 +196,7 @@ Remove a target from the given context.
 * *CHASH_ERROR_NOT_INITIALIZED*: the context was not initialized (use *chash_initialize()* first)
 * *CHASH_ERROR_NOT_FOUND*: the specified target does not exist in the given context
 
-### int chash_clear_targets(CHASH_CONTEXT *context)
+### int chash_clear_targets(CHASH_CONTEXT \*context)
 
 #### Description
 Clear all targets from the given context.
@@ -209,7 +209,7 @@ Clear all targets from the given context.
 * *CHASH_ERROR_INVALID_PARAMETER*: an invalid parameter was passed to the function
 * *CHASH_ERROR_NOT_INITIALIZED*: the context was not initialized (use *chash_initialize()* first)
 
-### int chash_targets_count(CHASH_CONTEXT *context)
+### int chash_targets_count(CHASH_CONTEXT \*context)
 
 #### Description
 Return the number of targets in the given context.
@@ -222,7 +222,7 @@ Return the number of targets in the given context.
 * *CHASH_ERROR_INVALID_PARAMETER*: an invalid parameter was passed to the function
 * *CHASH_ERROR_NOT_INITIALIZED*: the context was not initialized (use *chash_initialize()* first)
 
-### int chash_serialize(CHASH_CONTEXT *context, u_char **output)
+### int chash_serialize(CHASH_CONTEXT \*context, u_char \*\*output)
 
 #### Description
 Serialize the given context state into an opaque buffer (the context state can be restored by passing this buffer back to *chash_unserialize()*).
@@ -238,7 +238,7 @@ Serialize the given context state into an opaque buffer (the context state can b
 * *CHASH_ERROR_NOT_FOUND*: no target exist in the given context (use *chash_add_target()* first)
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 
-### int chash_unserialize(CHASH_CONTEXT *context, const u_char *input, u_int32_t size)
+### int chash_unserialize(CHASH_CONTEXT \*context, const u_char \*input, u_int32_t size)
 
 #### Description
 Restore a previously serialized context state (using *chash_serialize()*).
@@ -254,7 +254,7 @@ Restore a previously serialized context state (using *chash_serialize()*).
 * *CHASH_ERROR_NOT_FOUND*: no target exist in the serialized data (i.e. the serialized data is not coherent)
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 
-### int chash_file_serialize(CHASH_CONTEXT *context, const char *path)
+### int chash_file_serialize(CHASH_CONTEXT \*context, const char \*path)
 
 #### Description
 Serialize the given context state into a file (the context state can be restored by passing this file path back to *chash_file_unserialize()*).
@@ -271,7 +271,7 @@ Serialize the given context state into a file (the context state can be restored
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 * *CHASH_ERROR_IO*: an I/O error occurred (i.e. the given file path couldn't be written to)
 
-### int chash_file_unserialize(CHASH_CONTEXT *context, const char *path)
+### int chash_file_unserialize(CHASH_CONTEXT \*context, const char \*path)
 
 #### Description
 Restore a previously serialized context state (using *chash_file_serialize()*).
@@ -287,7 +287,7 @@ Restore a previously serialized context state (using *chash_file_serialize()*).
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 * *CHASH_ERROR_IO*: an I/O error occurred (i.e. the given file path couldn't be read from)
 
-### int chash_lookup(CHASH_CONTEXT *context, const char *name, u_int16_t count, char ***output)
+### int chash_lookup(CHASH_CONTEXT \*context, const char \*name, u_int16_t count, char \*\*\*output)
 
 #### Description
 Perform a lookup in the given context, returning *count* distincts targets.
@@ -305,7 +305,7 @@ Perform a lookup in the given context, returning *count* distincts targets.
 * *CHASH_ERROR_NOT_FOUND*: no target exist in the given context (use *chash_add_target()* first)
 * *CHASH_ERROR_MEMORY*: a memory allocation error occurred
 
-### int chash_lookup_balance(CHASH_CONTEXT *context, const char *name, u_int16_t count, char **output)
+### int chash_lookup_balance(CHASH_CONTEXT \*context, const char \*name, u_int16_t count, char \*\*output)
 
 #### Description
 Behave like *chash_lookup()* but only one randomly chosen target is returned among the *count* distinct targets.
